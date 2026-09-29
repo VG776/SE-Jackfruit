@@ -7,8 +7,8 @@ Thank you for your interest in contributing to NexusChat!
 1. Fork the repository.
 2. Clone your fork:
    ```bash
-   git clone https://github.com/your-username/nexuschat.git
-   cd nexuschat
+   git clone https://github.com/VG776/SE-Jackfruit.git
+   cd SE-Jackfruit
    ```
 3. Create a new branch:
    ```bash
