@@ -81,28 +81,37 @@ For the first version, we are focusing on text-based communication and community
 
 ## 2.4 Operating Environment
 
-NexusChat will run in a modern web browser, so users will not need to install a separate desktop application. The frontend will be developed using React, while Node.js will handle backend operations. PostgreSQL will be used for persistent data storage.
+NexusChat will run in a web browser, so users will not need to install a separate desktop application. It will be developed and tested using commonly used, up-to-date browsers.
 
-The application will use REST APIs for standard operations and WebSockets for real-time communication. Docker will be used to simplify the development and deployment environment, while Jenkins will support automated builds and tests.
+The frontend will use React, while Node.js will handle backend operations. PostgreSQL will store the application's data, including user details, communities, channels, and messages. REST APIs will be used for standard client-server communication, and WebSockets will support real-time features.
 
-A working network connection will be required for users to access the application. Real-time features will also depend on a functioning backend and an active WebSocket connection.
+Docker will be used to simplify the setup and execution of the application across development and testing environments. Jenkins will be used for continuous integration, including automated build and test steps.
+
+The application will require a working network connection to communicate with the backend. Features such as live messaging, typing indicators, and online status will also depend on the WebSocket connection being available.
 
 ## 2.5 Design and Implementation Constraints
 
-- The project will follow the Agile process required by the course and will track work in the team’s GitHub repository and backlog.
-- Changes to the protected main branch will be submitted through pull requests and reviewed before merging.
-- Automated build and test checks, code review, and security validation are part of the project workflow.
-- WebSockets will be used for real-time messaging and related live events.
-- The approved technology stack is React, Node.js LTS, PostgreSQL, WebSockets, Docker, Git/GitHub, Jenkins, and an agreed testing and code-quality toolchain.
-- Each team member should own a defined area of functionality and contribute to implementation as well as documentation.
+The development of NexusChat will follow the technology stack selected for the project. The frontend will use React, the backend will use Node.js, and PostgreSQL will be used for data storage. Any change to these technologies should be discussed and agreed upon by the team before implementation.
+
+The application will follow a client-server approach, with the frontend responsible for displaying information and collecting user input, while the backend handles application logic, validation, and database operations.
+Since NexusChat supports private messages and community-based communication, access control is an important part of its implementation. Users should not be able to access communities, channels, or conversations for which they do not have permission.
+
+The project will be developed using Git and GitHub for version control and collaboration. Changes will be submitted through pull requests rather than committed directly to the protected main branch. Jenkins will support the automated build and testing process.
+
+The team will follow an iterative development approach, implementing and testing features in manageable stages. The first version will focus on the agreed core features. Additional features outside the approved scope will not be added without discussion and approval.
 
 ## 2.6 Assumptions and Dependencies
 
-- Users have a working network connection and a supported browser.
-- The application can access the configured PostgreSQL database and required WebSocket services.
-- The team has access to the GitHub repository, project backlog, CI/CD environment, and test tools.
-- The deployment environment can provide HTTPS/WSS and store secrets outside source control.
-- Voice/video calling and other features explicitly outside the MVP will not be added without approval.
+The development and use of NexusChat depend on a few assumptions about the users, environment, and supporting technologies.
+Users are expected to have access to a supported web browser and a reasonably stable internet connection. An internet connection is required to access the application, and real-time features depend on a working connection between the browser and the backend.
+
+The backend and PostgreSQL database must be available for users to log in, retrieve information, and send messages. If the database or backend becomes unavailable, some or all application features may stop working until the issue is resolved.
+
+WebSocket connectivity is required for features such as live messages, typing indicators, and online status. If a WebSocket connection is interrupted, these features may not update immediately.
+The project also depends on the selected development tools and services being available and configured correctly. These include Node.js, PostgreSQL, Docker, GitHub, and Jenkins.
+
+The team assumes that configuration details and sensitive values, such as database credentials and authentication secrets, will be managed appropriately rather than exposed in the source code.
+Finally, the requirements and supporting documents must remain consistent as development progresses. If the team decides to introduce a major feature or change an existing requirement, the relevant documentation and tests will need to be updated.
 
 # 3. External Interface Requirements
 
