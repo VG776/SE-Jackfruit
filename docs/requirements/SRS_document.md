@@ -209,13 +209,19 @@ NexusChat allows users to create communities and organise conversations into sep
 
 # 6. Nonfunctional Requirements
 
-## 6.1 Performance Requirements
+## 6.1 Performance Requirementss
 
-The following are project targets and must be checked under a documented test load. The team should record the dataset, environment, number of concurrent clients, and measurement method in the test plan.
+NexusChat should respond quickly during normal use so that users can communicate without unnecessary delays. Since the application supports real-time messaging, performance is particularly important when several users are active in different communities at the same time.
 
-- The target for WebSocket message acknowledgement is no more than 500 ms at the 95th percentile (p95) under the defined test load.
-- Core UI/API operations should complete within 2 seconds under normal test conditions.
-- Search should return results within 2 seconds for the defined evaluation dataset.
+The following targets will be used to evaluate the application's performance:
+
+- **Real-time messaging:** The target for WebSocket message acknowledgement shall be no more than 500 ms at the 95th percentile (p95) under the defined test load.
+- **General operations:** Core UI/API operations, such as retrieving community information or loading a channel, should complete within 2 seconds under normal test conditions.
+- **Message search:** Search results should be returned within 2 seconds for the evaluation dataset defined in the test plan.
+- **Concurrent usage:** The application should support multiple users accessing communities, sending messages, and using other core features at the same time without unexpected failures under the agreed test load.
+- **Consistent behaviour:** The application should continue to handle valid requests correctly during performance testing. If a request cannot be completed, the system should return an appropriate error rather than silently failing.
+
+These targets will be checked during testing using a documented environment, dataset, and number of concurrent clients. The team will record the measurement method and test results in the test plan. If a target is not met, the team should investigate the cause and document the outcome before the final evaluation.
 
 ## 6.2 Safety Requirements
 
@@ -234,14 +240,18 @@ NexusChat is not a safety-critical system. However, actions that can remove a ch
 
 ## 6.4 Software Quality Attributes
 
-| **Attribute**   | **Expected Approach / Target**                                                                                                                |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| Maintainability | Keep the React UI, backend API, WebSocket handling, and persistence responsibilities separated into understandable modules.                   |
-| Testability     | Provide unit tests for core logic and integration tests for API, database, and WebSocket flows.                                               |
-| Reliability     | Handle disconnects and reconnects gracefully and avoid creating duplicate or corrupted messages during retries.                               |
-| Usability       | Make common chat actions understandable without requiring users to read technical documentation. Provide clear validation and error feedback. |
-| Portability     | Use Docker and documented configuration so the project can be started consistently in the intended environments.                              |
-| Security        | Resolve critical security findings before release, or document and obtain approval for any accepted exception.                                |
+NexusChat should be easy to maintain, test, and use as the project grows. The following quality attributes describe what the team should consider while developing and evaluating the application.
+
+| **Attribute** | **Expected Approach / Target** |
+|---|---|
+| Maintainability | The frontend, backend APIs, WebSocket handling, and database operations should be organised into separate modules so that changes can be made without unnecessarily affecting other parts of the application. |
+| Testability | The application should support unit and integration testing of important features, including authentication, community management, messaging, database operations, and WebSocket communication. |
+| Reliability | The application should handle temporary connection failures gracefully. Messages that have already been saved should remain available when users reconnect, and retry operations should be handled carefully to avoid unintended duplicate messages. |
+| Usability | Common tasks, such as joining a community, opening a channel, and sending a message, should be easy to understand. The interface should provide clear feedback when an action succeeds or fails. |
+| Portability | The project should use Docker and documented configuration so that team members can set up and run the application consistently in the intended development and testing environments. |
+| Security | Authentication, authorization, and input validation should be applied consistently. Critical security findings should be addressed before release, or any accepted exception should be documented and approved. |
+
+These attributes will be considered during implementation and testing. The team should use code reviews, automated tests, and the agreed code-quality tools to check whether the application follows these expectations.
 
 ## 6.5 Business and Domain Rules
 
