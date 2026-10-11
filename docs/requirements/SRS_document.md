@@ -81,11 +81,11 @@ For the first version, we are focusing on text-based communication and community
 
 ## 2.4 Operating Environment
 
-- A modern version of a supported browser, such as Chrome/Chromium, Firefox, or Safari.
-- Node.js LTS for the backend runtime.
-- PostgreSQL for persistent relational data.
-- HTTPS for web API traffic and WSS for WebSocket traffic in production.
-- Docker for consistent environments and Jenkins for CI/CD.
+NexusChat will run in a modern web browser, so users will not need to install a separate desktop application. The frontend will be developed using React, while Node.js will handle backend operations. PostgreSQL will be used for persistent data storage.
+
+The application will use REST APIs for standard operations and WebSockets for real-time communication. Docker will be used to simplify the development and deployment environment, while Jenkins will support automated builds and tests.
+
+A working network connection will be required for users to access the application. Real-time features will also depend on a functioning backend and an active WebSocket connection.
 
 ## 2.5 Design and Implementation Constraints
 
