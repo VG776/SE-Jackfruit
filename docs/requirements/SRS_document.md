@@ -69,15 +69,15 @@ Community owners and moderators will have additional permissions to manage membe
 
 For the first version, we are focusing on text-based communication and community management. Voice and video calls, screen sharing, native mobile applications and end-to-end encryption are not included in the current scope unless the project requirements are changed and approved.
 
-## 2.3 User Classes and Characteristics
+## ### 2.3 User Classes and Characteristics
 
-| **User Class**    | **Typical Needs**                                         | **Expected Access**                                                                                                                  |
-|-------------------|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| Guest             | Understand the service and create or access an account.   | Registration and login screens only.                                                                                                 |
-| Member            | Join communities and communicate with other members.      | Profile, communities, channels, messages, direct messages, reactions, search, and personal notification views.                       |
-| Moderator         | Help maintain a community and respond to rule violations. | Member capabilities plus moderation actions allowed by the assigned permissions.                                                     |
-| Community Admin   | Manage a community and its structure.                     | Community, membership, channel, role, and permission management, subject to system rules.                                            |
-| System Maintainer | Operate, troubleshoot, and deploy the application.        | Operational and deployment access as defined by the project; this does not automatically grant access to private user conversations. |
+| **User Class** | **Typical Needs** | **Expected Access** |
+|---|---|---|
+| Guest | Explore the application and understand its purpose before creating an account. | Access to registration and login screens. Guests must log in to use features that require an account. |
+| Member | Join communities, communicate with other members, and keep track of conversations. | Access to profiles, communities, channels, text messages, direct messages, reactions, message search, and personal notifications. |
+| Moderator | Help maintain a community, handle inappropriate content, and respond to rule violations. | Member features, along with moderation actions such as managing reported content or addressing member violations, depending on assigned permissions. |
+| Community Admin | Manage a community and organise its structure according to the community's needs. | Permissions to manage community settings, memberships, channels, roles, and member permissions, subject to the application's rules. |
+| System Maintainer | Keep the application running, troubleshoot technical issues, and manage deployment and maintenance activities. | Access to operational and deployment tools as required for the project. This role does not automatically provide access to users' private conversations. |
 
 ## 2.4 Operating Environment
 
