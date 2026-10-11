@@ -169,13 +169,15 @@ The requirements below describe the expected behaviour of the MVP. “Shall” i
 
 ## 5.2 Community and Channel Management
 
-**FR-COM-01 \[High\]:** The system shall allow an authenticated member to create a community with a name that is unique for that owner. If the name does not meet the agreed validation rules or conflicts with an existing community owned by that user, creation shall fail with a useful message.
+NexusChat allows users to create communities and organise conversations into separate text channels. Community administrators will be responsible for managing their communities, while access to management features will depend on the permissions assigned to each user.
 
-**FR-COM-02 \[High\]:** The system shall allow a community admin with the required permission to invite users and manage community membership. Unauthorized users shall not be able to issue invitations or change membership.
+**FR-COM-01 [High]:** The system shall allow an authenticated member to create a community by providing a valid name. A user shall not be allowed to create another community with the same name under their ownership. If the name is invalid or conflicts with an existing community owned by the same user, the system shall reject the request and display a clear error message.
 
-**FR-COM-03 \[High\]:** The system shall allow an authorized community admin to create, rename, and delete text channels. The system shall reject these actions when the requester lacks permission or the supplied channel details are invalid.
+**FR-COM-02 [High]:** The system shall allow a community admin with the required permissions to invite users and manage community membership. Users without the required permissions shall not be allowed to send invitations or make unauthorized changes to membership. The system shall inform the user when an invitation or membership operation cannot be completed.
 
-**FR-COM-04 \[High\]:** The system shall check the requester’s role and channel/community permissions on the server before carrying out any protected action. A failed permission check shall leave the protected resource unchanged.
+**FR-COM-03 [High]:** The system shall allow an authorized community admin to create, rename, and delete text channels within their community. The system shall validate the supplied channel details and check the user's permissions before carrying out these operations. If the details are invalid or the user lacks the required permission, the operation shall be rejected.
+
+**FR-COM-04 [High]:** The system shall verify the requesting user's role and community or channel permissions on the server before performing any protected operation. If the user is not authorized, the system shall reject the request without making changes to the protected resource.
 
 ## 5.3 Real-Time Messaging and Direct Messages
 
