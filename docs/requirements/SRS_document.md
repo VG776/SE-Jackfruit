@@ -69,7 +69,7 @@ Community owners and moderators will have additional permissions to manage membe
 
 For the first version, we are focusing on text-based communication and community management. Voice and video calls, screen sharing, native mobile applications and end-to-end encryption are not included in the current scope unless the project requirements are changed and approved.
 
-## ### 2.3 User Classes and Characteristics
+##  2.3 User Classes and Characteristics
 
 | **User Class** | **Typical Needs** | **Expected Access** |
 |---|---|---|
