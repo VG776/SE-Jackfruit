@@ -49,22 +49,25 @@ The team should check the project package for the current versions of these refe
 
 ## 2.1 Product Perspective
 
-NexusChat is being developed as a new web application. The React frontend will run in a browser and communicate with a Node.js backend. Standard request-and-response operations will use a REST API over HTTPS, while WebSockets will carry real-time events such as new messages, presence changes, and typing indicators. PostgreSQL will store persistent application data. Docker will support a repeatable development and deployment environment, and Jenkins will be used for the project’s CI/CD workflow.
+NexusChat is a web-based chat application that we are developing to make communication between members of a community easier. The idea is similar to applications such as Discord, where users can join communities, talk in different channels and send private messages to each other.
+
+The application will have a frontend where users can interact with the features and a backend that handles requests, user accounts, messages and other operations. We plan to use React for the frontend, Node.js for the backend and PostgreSQL to store the application data.
+
+Normal requests, such as logging in or creating a channel, will be handled through REST APIs. WebSockets will be used for features that need to update without making users refresh the page, such as new messages, typing indicators and online status.
+
+We will use Docker to help run the application in a consistent environment and Jenkins to automate parts of the build and testing process. Since the project is being developed by a team, GitHub will be used to manage the code and review changes before they are merged.
 
 ## 2.2 Product Functions
 
-- Register accounts, sign in and sign out, and manage authenticated sessions.
-- View and update permitted profile information.
-- Create communities, manage membership, and handle invitations.
-- Create, rename, and delete text channels according to permissions.
-- Send and receive channel messages in real time.
-- Exchange one-to-one direct messages.
-- Show online, idle, and offline presence, along with typing indicators.
-- Edit or delete messages when authorized, and add or remove reactions.
-- Apply community roles and permissions and carry out moderation actions.
-- Show unread counts and relevant notifications, and search accessible messages.
-- Record security-relevant moderation actions in an audit trail.
-- Provide a responsive browser interface with understandable validation and error messages.
+NexusChat will bring the main features needed for communication within an online community into one application. Users will be able to create an account, log in, update their profile and join communities.
+
+Within a community, members will be able to communicate through text channels. They will also be able to send direct messages to other users when they need to have a private conversation. Messages can be edited or deleted where permitted, and users will be able to react to messages.
+
+The application will also show useful information such as whether a user is online, whether someone is typing and whether there are unread messages. A search feature will help users find messages without having to scroll through an entire conversation.
+
+Community owners and moderators will have additional permissions to manage members, control access and handle inappropriate behaviour. Important moderation actions may also be recorded so that they can be reviewed later.
+
+For the first version, we are focusing on text-based communication and community management. Voice and video calls, screen sharing, native mobile applications and end-to-end encryption are not included in the current scope unless the project requirements are changed and approved.
 
 ## 2.3 User Classes and Characteristics
 
