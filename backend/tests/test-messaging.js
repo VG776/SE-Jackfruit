@@ -1,29 +1,35 @@
 
+require("dotenv").config({ path: "../.env" });
+
 const WebSocket = require("ws");
+const jwt = require("jsonwebtoken");
 
-const url = "ws://localhost:5000";
+const secret = process.env.JWT_SECRET;
 
-function connectClient() {
+if (!secret || secret === "your_jwt_secret_key_here") {
+  throw new Error("Set a valid JWT_SECRET in the project .env file");
+}
+
+function connectClient(userId) {
+  const token = jwt.sign(
+    { sub: userId },
+    secret,
+    { algorithm: "HS256", expiresIn: "5m" }
+  );
+
   return new Promise((resolve, reject) => {
-    const socket = new WebSocket(url);
-    let readyReceived = false;
+    const socket = new WebSocket(
+      `ws://localhost:5000/?token=${encodeURIComponent(token)}`
+    );
 
-    socket.on("message", (data) => {
-      let event;
-
-      try {
-        event = JSON.parse(data.toString());
-      } catch {
-        return;
-      }
-
-      if (event.type === "connection.ready" && !readyReceived) {
-        readyReceived = true;
-        resolve(socket);
-      }
-    });
-
+    socket.once("open", () => resolve(socket));
     socket.once("error", reject);
+
+    socket.once("close", (code, reason) => {
+      reject(new Error(
+        `Connection rejected: ${code} ${reason.toString()}`
+      ));
+    });
   });
 }
 
@@ -59,11 +65,11 @@ function waitForEvent(socket, expectedType, timeout = 3000) {
 }
 
 async function main() {
-  const alice = await connectClient();
+  const alice = await connectClient("test-alice");
   let bob;
 
   try {
-    bob = await connectClient();
+    bob = await connectClient("test-bob");
 
     const aliceJoined = waitForEvent(alice, "channel.joined");
     const bobJoined = waitForEvent(bob, "channel.joined");
@@ -86,16 +92,17 @@ async function main() {
       type: "message.send",
       payload: {
         channelId: "general",
-        content: "Hello from Alice!"
+        content: "Hello from authenticated Alice!"
       }
     }));
 
     const event = await receivedByBob;
 
-    if (event.payload.content !== "Hello from Alice!") {
+    if (event.payload.content !== "Hello from authenticated Alice!") {
       throw new Error("Message content did not match");
     }
 
+    console.log("PASS: Authenticated clients connected");
     console.log("PASS: Bob received Alice's message");
     console.log("Received:", event.payload.content);
   } finally {

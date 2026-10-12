@@ -1,10 +1,14 @@
 
-require("dotenv").config();
+require("dotenv").config({
+  path: require("path").resolve(__dirname, "../../.env")
+});
 
 const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
 const { randomUUID } = require("crypto");
+const { verifyToken } = require("./auth");
+const url = require("url");
 
 const app = express();
 app.use(express.json());
@@ -29,7 +33,30 @@ function sendEvent(socket, type, payload) {
   }
 }
 
-wss.on("connection", (socket) => {
+
+wss.on("connection", (socket, request) => {
+  const requestUrl = new URL(request.url, "http://localhost");
+  const token = requestUrl.searchParams.get("token");
+
+  if (!token) {
+    socket.close(1008, "Authentication required");
+    return;
+  }
+
+  let user;
+
+  try {
+    user = verifyToken(token);
+  } catch {
+    socket.close(1008, "Invalid or expired token");
+    return;
+  }
+
+  if (!user || typeof user.sub !== "string" || !user.sub) {
+    socket.close(1008, "Invalid token payload");
+    return;
+  }
+
   clients.set(socket, { channels: new Set() });
   console.log("A WebSocket client connected.");
 
