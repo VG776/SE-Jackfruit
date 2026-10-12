@@ -279,17 +279,25 @@ These requirements will help keep the application data reliable and ensure that 
 
 # Appendix A: Glossary
 
-| **Term**                              | **Meaning in NexusChat**                                                                                             |
-|---------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| Community / Server                    | A persistent group space with members, roles, and channels.                                                          |
-| Channel                               | A text conversation space within a community.                                                                        |
-| DM (Direct Message)                   | A private one-to-one conversation between two users.                                                                 |
-| WebSocket                             | A persistent, two-way connection used to exchange real-time events.                                                  |
-| Presence                              | A user availability state, such as online, idle, or offline.                                                         |
-| Role                                  | A named set of permissions assigned within a community.                                                              |
-| MVP (Minimum Viable Product)          | The smallest agreed version of the product that meets the project’s core goals.                                      |
-| RTM (Requirement Traceability Matrix) | A record linking requirements to design elements, implementation, and tests.                                         |
-| CI/CD                                 | Continuous integration and continuous delivery/deployment practices used to automate build, test, and release steps. |
+This glossary explains the technical terms used throughout the NexusChat Software Requirements Specification.
+
+| **Term** | **Meaning in NexusChat** |
+|---|---|
+| Community / Server | A group space where users can join, communicate, and access channels based on their permissions. |
+| Channel | A separate conversation space within a community, used to discuss a particular topic. |
+| DM (Direct Message) | A private conversation between two users. |
+| WebSocket | A communication method that allows the browser and server to exchange real-time updates without repeatedly creating new connections. |
+| Presence | An indication of whether a user is online, idle, or offline. |
+| Role | A named set of permissions that determines what a user can do within a community. |
+| MVP (Minimum Viable Product) | The first agreed version of NexusChat that includes the core features required for the project. |
+| RTM (Requirement Traceability Matrix) | A document that links requirements to their related design elements and test cases so the team can track implementation and verification. |
+| CI/CD (Continuous Integration and Continuous Delivery/Deployment) | A development practice that automates parts of the build, testing, and delivery process. |
+| REST API | An interface that allows the frontend and backend to exchange requests and responses for operations such as account management and channel creation. |
+| PostgreSQL | The relational database used to store NexusChat data, including users, communities, channels, and messages. |
+| Docker | A tool used to package and run the application in a consistent environment. |
+| Jenkins | An automation tool used in the project to run configured build, testing, and delivery tasks. |
+
+
 
 # Appendix B: Field Layouts
 
