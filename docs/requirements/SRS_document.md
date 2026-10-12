@@ -263,11 +263,19 @@ These attributes will be considered during implementation and testing. The team 
 
 # 7. Other Requirements
 
-- The database shall use primary keys, foreign keys, and uniqueness constraints where needed to protect data integrity.
-- Dates and times shall be stored consistently, preferably in UTC, and displayed to users in a suitable local format.
-- Application logs shall support troubleshooting without recording passwords, authentication tokens, or other secrets.
-- Field-level validation rules and data formats shall be kept consistent with the approved Field Layouts spreadsheet.
-- Requirement IDs and test references shall remain consistent with the Requirement Traceability Matrix.
+Apart from the functional and non-functional requirements described in the earlier sections, NexusChat must follow a few additional rules to keep its data consistent and make the application easier to maintain.
+
+- **Data integrity:** The database shall use primary keys, foreign keys, and uniqueness constraints wherever required to prevent invalid or duplicate records and maintain relationships between users, communities, channels, and messages.
+
+- **Date and time handling:** Dates and times shall be stored consistently, preferably in UTC, and displayed in a suitable local format when shown to users.
+
+- **Application logging:** The application shall maintain logs that help the team identify errors and troubleshoot issues. Passwords, authentication tokens, and other sensitive information shall not be included in these logs.
+
+- **Field validation:** Input fields, their data types, formats, and validation rules shall follow the approved Field Layouts spreadsheet. Any changes to these rules shall be reflected in the relevant documentation and implementation.
+
+- **Requirement traceability:** Functional and non-functional requirements shall use consistent IDs across the SRS, design documents, and Requirement Traceability Matrix (RTM). The RTM shall be updated whenever a requirement is added, changed, or removed.
+
+These requirements will help keep the application data reliable and ensure that the implementation, documentation, and tests remain consistent throughout development.
 
 # Appendix A: Glossary
 
