@@ -298,10 +298,47 @@ This glossary explains the technical terms used throughout the NexusChat Softwar
 | Jenkins | An automation tool used in the project to run configured build, testing, and delivery tasks. |
 
 
-
 # Appendix B: Field Layouts
 
-Use 08_Field_Layouts.xlsx as the detailed reference for field names, formats, validation rules, and required/optional status. Keep this SRS and the spreadsheet aligned when field rules change.
+## B.1 Purpose
+
+This appendix describes the data fields used in NexusChat. It specifies the field names, data types, lengths, descriptions, mandatory status, and applicable validation rules and constraints. These definitions help maintain consistency between the software requirements, database design, and application implementation.
+
+## B.2 Field Layout Specification
+
+Each field is defined using the following attributes:
+
+- **Entity:** The data entity to which the field belongs, such as User, Community, Channel, or Message.
+- **Field:** The name used to identify the field.
+- **Length:** The maximum permitted length or size, where applicable.
+- **Data Type:** The expected type or format of the field.
+- **Description:** A brief explanation of the field's purpose.
+- **Mandatory:** Indicates whether the field is required or optional.
+- **Constraints:** Specifies applicable validation rules, permitted values, uniqueness requirements, and primary-key or foreign-key relationships.
+
+## B.3 Entities Covered
+
+The field layouts cover the principal data entities required by NexusChat:
+
+1. **User:** Account details, username, email address, password hash, display name, and account status.
+2. **Community:** Community identifier, owner, name, and description.
+3. **Membership:** Relationships between users and communities, including assigned roles.
+4. **Channel:** Channel identifier, associated community, name, and type.
+5. **Message:** Message identifier, sender, content, associated channel, creation timestamp, and edit timestamp.
+6. **Reaction:** User reactions associated with messages.
+7. **Audit Event:** Records of relevant actions performed within the application.
+
+Additional fields required by approved features, including direct messaging and notifications, shall be incorporated into the data model as necessary.
+
+## B.4 Data Validation and Consistency
+
+All required fields must be validated before data is stored. Field lengths, data types, permitted values, and other constraints must be enforced consistently across the frontend, backend, and database wherever applicable.
+
+Primary-key and foreign-key relationships must preserve data integrity. Timestamps should follow the project's agreed UTC storage convention. Password hashes and other sensitive information must not be exposed through user-facing interfaces or application responses.
+
+## B.5 Maintenance
+
+Whenever an approved requirement or design decision changes the data fields, the corresponding requirements, database schema, implementation, and tests must be reviewed and updated. The field definitions must remain consistent throughout the project.
 
 # Appendix C: Requirement Traceability Matrix
 
