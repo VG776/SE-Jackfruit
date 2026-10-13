@@ -1,14 +1,6 @@
 
 # NexusChat — Test Plan and Test Case Specification
 
-**Project:** NexusChat — Real-Time Community and Collaboration Platform  
-**Course:** UE24CS341A — Software Engineering Mini-Project  
-**Institution:** PES University  
-**Document Version:** 1.0  
-**Document Status:** Draft for Team Review  
-**Prepared by:** NexusChat Project Team  
-**Last Updated:** 13 October 2026
-
 ---
 
 ## Document Control
