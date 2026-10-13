@@ -113,12 +113,9 @@ The project also depends on the selected development tools and services being av
 The team assumes that configuration details and sensitive values, such as database credentials and authentication secrets, will be managed appropriately rather than exposed in the source code.
 Finally, the requirements and supporting documents must remain consistent as development progresses. If the team decides to introduce a major feature or change an existing requirement, the relevant documentation and tests will need to be updated.
 
-# 3. External Interface Requirements
-
-## 3.1 User Interfaces
-
+3. External Interface Requirements
+3.1 User Interfaces
 The interface should make the main chat workflow easy to follow. At minimum, the browser application will include:
-
 - Registration and login screens.
 - A community navigation area and channel list.
 - A message timeline and message composer.
@@ -127,24 +124,19 @@ The interface should make the main chat workflow easy to follow. At minimum, the
 - Community and channel administration controls for authorized users.
 - Search and notification views.
 - Clear feedback for invalid input, failed requests, permission errors, and connection problems.
-
 The layout should adapt to common desktop and laptop screen sizes. Any responsive behaviour beyond the agreed MVP should be confirmed during design and validation.
+3.2 Software Interfaces
+Interface	Purpose	Expected Data / Notes
+REST API	Account, profile, community, channel, search, and moderation operations.	JSON request and response bodies; errors should use a consistent format.
+WebSocket API	Real-time messages, presence, typing, and reaction events.	Versioned JSON event envelope with event type, timestamp, and payload.
+PostgreSQL	Persistent application state.	Users, communities, memberships, channels, messages, roles, reactions, notifications, and audit records as finalized in the data model.
+Jenkins	Continuous integration and delivery workflow.	Build, test, and configured analysis or deployment stages.
+SonarQube or equivalent	Code-quality and static-analysis feedback.	Quality and security findings where the selected tool supports them.
+Jest/Supertest or equivalent	Automated testing.	Unit and integration tests for relevant backend, API, and application flows.
 
-## 3.2 Software Interfaces
 
-| **Interface**                | **Purpose**                                                              | **Expected Data / Notes**                                                                                                               |
-|------------------------------|--------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| REST API                     | Account, profile, community, channel, search, and moderation operations. | JSON request and response bodies; errors should use a consistent format.                                                                |
-| WebSocket API                | Real-time messages, presence, typing, and reaction events.               | Versioned JSON event envelope with event type, timestamp, and payload.                                                                  |
-| PostgreSQL                   | Persistent application state.                                            | Users, communities, memberships, channels, messages, roles, reactions, notifications, and audit records as finalized in the data model. |
-| Jenkins                      | Continuous integration and delivery workflow.                            | Build, test, and configured analysis or deployment stages.                                                                              |
-| SonarQube or equivalent      | Code-quality and static-analysis feedback.                               | Quality and security findings where the selected tool supports them.                                                                    |
-| Jest/Supertest or equivalent | Automated testing.                                                       | Unit and integration tests for relevant backend, API, and application flows.                                                            |
-
-## 3.3 Communications Interfaces
-
+3.3 Communications Interfaces
 The deployed application shall use HTTPS for browser-to-server request/response traffic and WSS for WebSocket traffic. WebSocket messages should follow a documented, versioned JSON event format. The server should validate incoming events and return an understandable error or reject an event when it is malformed or the sender is not authorized.
-
 # 4. Analysis Models
 
 This section describes the main interactions between users and NexusChat. The use-case model helps the team understand which features are available to each type of user and how the application should respond to normal and unauthorized actions.
