@@ -475,7 +475,7 @@ The use-case diagram illustrates the interactions between different users and th
 
 The diagram provides a high-level overview of the system's functional requirements and helps clarify the responsibilities of each user role.
 
-![NexusChat Use-Case Diagram](/NexusChat UML Use Case Diagram.png)
+![NexusChat Use-Case Diagram](docs/requirements/NexusChat UML Use Case Diagram.png)
 
 **Figure 4.1:** Use-Case Diagram for NexusChat
 
