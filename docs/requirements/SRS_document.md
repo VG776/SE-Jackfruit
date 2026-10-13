@@ -147,11 +147,337 @@ The deployed application shall use HTTPS for browser-to-server request/response 
 
 # 4. Analysis Models
 
-The principal actors are Guest, Member, Moderator, and Community Admin. The System Maintainer supports deployment and operations. The detailed use-case diagram, use-case descriptions, and data model should be maintained in the Architecture and Design Specification so the same model is not duplicated inconsistently across documents.
+This section describes the main interactions between users and NexusChat. The use-case model helps the team understand which features are available to each type of user and how the application should respond to normal and unauthorized actions.
 
-The use-case model should cover account access, profile updates, community membership, channel management, channel messaging, direct messaging, message edits and deletion, reactions, search, notifications, and moderation. Each use case should identify its actor, preconditions, main flow, alternative or error flows, and postconditions.
+## 4.1 Actors
 
-Insert or reference the approved UML use-case diagram here once it has been reviewed by the team.
+The following actors interact with NexusChat:
+
+| Actor | Description |
+|---|---|
+| Guest | A person who has not logged in and can access the registration and login screens. |
+| Member | An authenticated user who can access permitted communities, participate in text conversations, send direct messages, and use other available communication features. |
+| Moderator | A user who has permission to perform moderation actions within assigned communities. |
+| Community Admin | A user responsible for managing community settings, membership, channels, and permissions within the limits of their role. |
+| System Maintainer | A person responsible for application setup, deployment, monitoring, and technical maintenance. This role does not automatically grant access to private conversations. |
+
+## 4.2 Main Use Cases
+
+The main use cases identified for NexusChat are listed below.
+
+| Use Case ID | Use Case | Primary Actor | Description |
+|---|---|---|---|
+| UC-01 | Register Account | Guest | Creates a new user account using valid registration details. |
+| UC-02 | Log In | Guest | Authenticates a registered user using valid credentials. |
+| UC-03 | Manage Profile | Member | Allows a user to view and update permitted profile information. |
+| UC-04 | Create Community | Member | Allows an authenticated user to create a community with a valid name. |
+| UC-05 | Manage Membership | Community Admin | Allows an authorized administrator to invite users and manage membership. |
+| UC-06 | Manage Channels | Community Admin | Allows an authorized administrator to create, rename, and delete text channels. |
+| UC-07 | Send Channel Message | Member | Allows a member to send a text message to a channel they can access. |
+| UC-08 | Exchange Direct Messages | Member | Allows two eligible users to exchange private messages. |
+| UC-09 | Edit or Delete Message | Member | Allows an author to edit or delete their own messages, subject to the agreed rules. |
+| UC-10 | React to Message | Member | Allows a user to add or remove a reaction on an accessible message. |
+| UC-11 | Search Messages | Member | Searches messages within communities and conversations the user is authorized to access. |
+| UC-12 | View Notifications and Unread Counts | Member | Displays relevant new-message notifications and unread information. |
+| UC-13 | Moderate Community Content | Moderator / Community Admin | Allows an authorized user to perform permitted moderation actions. |
+| UC-14 | Record Audit Events | System | Records security-relevant moderation events for later review. |
+| UC-15 | Maintain Application | System Maintainer | Supports deployment, troubleshooting, and technical maintenance. |
+
+## 4.3 Use-Case Descriptions
+
+### UC-01: Register Account
+
+**Primary actor:** Guest
+
+**Preconditions:** The guest can access the registration page and has not already registered using the same unique username or email address.
+
+**Main flow:**
+1. The guest opens the registration page.
+2. The guest enters the required account details.
+3. The system validates the submitted values.
+4. The system checks that the username and email address are not already registered.
+5. The system creates the account and provides confirmation.
+
+**Alternative and error flows:**
+- If a required field is missing or invalid, the system displays a validation message.
+- If the username or email address is already registered, the system rejects the registration.
+- If account creation fails, the system displays an appropriate error without creating an incomplete account.
+
+**Postconditions:** A valid account is created, or the guest receives an error explaining why registration could not be completed.
+
+### UC-02: Log In
+
+**Primary actor:** Guest
+
+**Preconditions:** The user has a registered account.
+
+**Main flow:**
+1. The user opens the login page.
+2. The user enters their account credentials.
+3. The system validates the credentials.
+4. The system establishes an authenticated session.
+5. The user gains access to the features permitted by their account.
+
+**Alternative and error flows:**
+- If the credentials are invalid, the system rejects the login.
+- If the request is invalid, the system provides an appropriate error message without exposing sensitive authentication information.
+
+**Postconditions:** The user is authenticated, or access is denied.
+
+### UC-03: Manage Profile
+
+**Primary actor:** Member
+
+**Preconditions:** The user is authenticated.
+
+**Main flow:**
+1. The user opens their profile.
+2. The system displays the permitted profile information.
+3. The user edits the fields they are allowed to change.
+4. The system validates the updated values.
+5. The system saves the changes and displays the updated profile.
+
+**Alternative and error flows:**
+- If an updated value is invalid, the system rejects that change and displays a validation message.
+- If saving fails, the system informs the user that the update was not completed.
+
+**Postconditions:** The profile contains the accepted changes, or the existing information remains unchanged.
+
+### UC-04: Create Community
+
+**Primary actor:** Member
+
+**Preconditions:** The user is authenticated.
+
+**Main flow:**
+1. The user selects the option to create a community.
+2. The user enters a valid community name.
+3. The system validates the name and checks the ownership-based uniqueness rule.
+4. The system creates the community.
+5. The creator receives the appropriate owner permissions.
+
+**Alternative and error flows:**
+- If the name is invalid or conflicts with another community owned by the same user, the system rejects the request.
+- If the user is not authenticated, the system denies the operation.
+
+**Postconditions:** The community is created with the appropriate ownership information, or no new community is created.
+
+### UC-05: Manage Membership
+
+**Primary actor:** Community Admin
+
+**Preconditions:** The administrator is authenticated and has the required permissions for the community.
+
+**Main flow:**
+1. The administrator opens the community membership controls.
+2. The administrator selects a permitted invitation or membership operation.
+3. The system checks the administrator's permissions and validates the request.
+4. The system applies the operation.
+5. The system displays the updated invitation or membership status.
+
+**Alternative and error flows:**
+- If the administrator lacks the required permission, the system rejects the operation.
+- If the target user or request is invalid, the system displays an appropriate error.
+
+**Postconditions:** The membership or invitation state is updated only when the operation is valid and authorized.
+
+### UC-06: Manage Channels
+
+**Primary actor:** Community Admin
+
+**Preconditions:** The administrator is authenticated and has permission to manage channels in the selected community.
+
+**Main flow:**
+1. The administrator opens the channel-management controls.
+2. The administrator chooses to create, rename, or delete a channel.
+3. The system validates the channel details and checks permissions.
+4. The system performs the requested operation.
+5. The system displays the updated channel list.
+
+**Alternative and error flows:**
+- If the request contains invalid details, the system rejects it.
+- If the user lacks the required permission, the system does not change the channel.
+- If the operation fails, the system displays an appropriate error.
+
+**Postconditions:** The channel list reflects a successfully completed operation, or the original state remains unchanged.
+
+### UC-07: Send Channel Message
+
+**Primary actor:** Member
+
+**Preconditions:** The user is authenticated and has permission to access the selected channel.
+
+**Main flow:**
+1. The user opens the channel.
+2. The user enters a message.
+3. The system validates the message and verifies access permissions.
+4. The system stores the accepted message.
+5. The system sends the corresponding real-time event to connected clients authorized to view the channel.
+
+**Alternative and error flows:**
+- If the message is empty or invalid, the system rejects it.
+- If the user is not authorized to access the channel, the system rejects the request.
+- If real-time delivery is interrupted, persisted messages remain available for retrieval when the user reconnects.
+
+**Postconditions:** A valid message is stored and made available to authorized users.
+
+### UC-08: Exchange Direct Messages
+
+**Primary actor:** Member
+
+**Preconditions:** The sender is authenticated and eligible to participate in the direct conversation.
+
+**Main flow:**
+1. The sender opens a direct conversation with another eligible user.
+2. The sender enters and submits a message.
+3. The system validates the request and verifies the sender's access.
+4. The system stores the message.
+5. The recipient can retrieve the message and receive the relevant real-time event when connected.
+
+**Alternative and error flows:**
+- If the sender is not eligible to access the conversation, the system rejects the request.
+- If another user attempts to access the conversation without being a participant, the system denies access.
+
+**Postconditions:** The message is available to the conversation participants and is not exposed to unrelated users.
+
+### UC-09: Edit or Delete Message
+
+**Primary actor:** Member
+
+**Preconditions:** The user is authenticated and can access the message.
+
+**Main flow:**
+1. The user selects a message they are permitted to modify.
+2. The user chooses to edit or delete it.
+3. The system verifies message ownership or applicable moderation permission.
+4. The system applies the requested change.
+5. The updated or deleted state is reflected in the relevant conversation.
+
+**Alternative and error flows:**
+- If the user does not have permission, the system rejects the operation.
+- If the message does not exist or cannot be modified, the system reports that the operation could not be completed.
+
+**Postconditions:** The message is updated or removed from normal user-facing views as permitted by the application's rules.
+
+### UC-10: React to Message
+
+**Primary actor:** Member
+
+**Preconditions:** The user is authenticated and can access the target message.
+
+**Main flow:**
+1. The user selects a message.
+2. The user adds or removes a supported reaction.
+3. The system validates the reaction and verifies access.
+4. The system updates the reaction state.
+5. The updated reaction information is displayed.
+
+**Alternative and error flows:**
+- If the message is inaccessible or the reaction value is invalid, the system rejects the change.
+
+**Postconditions:** The reaction state reflects the accepted operation.
+
+### UC-11: Search Messages
+
+**Primary actor:** Member
+
+**Preconditions:** The user is authenticated and has access to the application search feature.
+
+**Main flow:**
+1. The user enters a search term.
+2. The system processes the query.
+3. The system retrieves matching messages from locations the user is authorized to access.
+4. The system displays the results.
+
+**Alternative and error flows:**
+- If the query is invalid, the system provides appropriate feedback.
+- If no messages match, the system displays an empty-results message.
+- Messages from inaccessible communities or conversations are excluded.
+
+**Postconditions:** The user receives search results limited to authorized content.
+
+### UC-12: View Notifications and Unread Counts
+
+**Primary actor:** Member
+
+**Preconditions:** The user is authenticated.
+
+**Main flow:**
+1. A relevant new message or notification event occurs.
+2. The system updates the user's relevant notification or unread state.
+3. The user views the notification or opens the relevant conversation.
+4. The system updates the unread state according to the agreed read-tracking rules.
+
+**Alternative and error flows:**
+- If the connection is interrupted, the interface may not update immediately.
+- The system should refresh or retrieve the relevant state when connectivity is restored, according to the implemented design.
+
+**Postconditions:** The displayed notification and unread information reflects the current application state.
+
+### UC-13: Moderate Community Content
+
+**Primary actor:** Moderator or Community Admin
+
+**Preconditions:** The user is authenticated and has the required moderation permission in the relevant community.
+
+**Main flow:**
+1. The moderator identifies the content or member requiring action.
+2. The moderator selects a permitted moderation operation.
+3. The system verifies the moderator's role and permissions.
+4. The system validates the target and performs the action.
+5. The system records the relevant security-sensitive moderation event.
+
+**Alternative and error flows:**
+- If the moderator lacks permission, the system rejects the operation.
+- If the target is invalid, the system does not modify the affected resource.
+
+**Postconditions:** The authorized moderation action is completed and recorded where required, or the original state remains unchanged.
+
+### UC-14: Record Audit Events
+
+**Primary actor:** System
+
+**Preconditions:** A security-relevant moderation event occurs.
+
+**Main flow:**
+1. The system identifies the action that requires an audit record.
+2. The system records the actor, action, affected resource, and timestamp.
+3. The record is stored for later review according to the application's design.
+
+**Alternative and error flows:**
+- If recording fails, the failure should be handled and logged according to the approved error-handling design.
+- Audit records must not contain passwords, authentication tokens, or other secrets.
+
+**Postconditions:** The required audit event is available for review when successfully recorded.
+
+### UC-15: Maintain Application
+
+**Primary actor:** System Maintainer
+
+**Preconditions:** The maintainer has access to the project's approved development or deployment environment.
+
+**Main flow:**
+1. The maintainer follows the documented setup or deployment procedure.
+2. The maintainer checks application service health and relevant logs.
+3. The maintainer investigates errors and applies approved fixes or configuration changes.
+4. The maintainer runs the configured build and test checks.
+5. The maintainer records relevant outcomes.
+
+**Alternative and error flows:**
+- If a service fails to start, the maintainer reviews the available logs and configuration.
+- If automated checks fail, the failure is reviewed before the affected change is accepted.
+
+**Postconditions:** The application is running or the identified maintenance issue is documented for further resolution.
+
+### 4.4 Use-Case Diagram
+
+The use-case diagram illustrates the interactions between different users and the NexusChat system. It identifies the main actors—Guest, Member, Community Admin, Moderator, and System Maintainer—and shows the functionalities available to each actor.
+
+The diagram provides a high-level overview of the system's functional requirements and helps clarify the responsibilities of each user role.
+
+![NexusChat Use-Case Diagram](docs/requirements/NexusChat_UML_Use_Case_Diagram.png)
+
+**Figure 4.1:** Use-Case Diagram for NexusChat
 
 # 5. System Features and Functional Requirements
 
