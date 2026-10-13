@@ -49,57 +49,69 @@ The team should check the project package for the current versions of these refe
 
 ## 2.1 Product Perspective
 
-NexusChat is being developed as a new web application. The React frontend will run in a browser and communicate with a Node.js backend. Standard request-and-response operations will use a REST API over HTTPS, while WebSockets will carry real-time events such as new messages, presence changes, and typing indicators. PostgreSQL will store persistent application data. Docker will support a repeatable development and deployment environment, and Jenkins will be used for the project’s CI/CD workflow.
+NexusChat is a web-based chat application that we are developing to make communication between members of a community easier. The idea is similar to applications such as Discord, where users can join communities, talk in different channels and send private messages to each other.
+
+The application will have a frontend where users can interact with the features and a backend that handles requests, user accounts, messages and other operations. We plan to use React for the frontend, Node.js for the backend and PostgreSQL to store the application data.
+
+Normal requests, such as logging in or creating a channel, will be handled through REST APIs. WebSockets will be used for features that need to update without making users refresh the page, such as new messages, typing indicators and online status.
+
+We will use Docker to help run the application in a consistent environment and Jenkins to automate parts of the build and testing process. Since the project is being developed by a team, GitHub will be used to manage the code and review changes before they are merged.
 
 ## 2.2 Product Functions
 
-- Register accounts, sign in and sign out, and manage authenticated sessions.
-- View and update permitted profile information.
-- Create communities, manage membership, and handle invitations.
-- Create, rename, and delete text channels according to permissions.
-- Send and receive channel messages in real time.
-- Exchange one-to-one direct messages.
-- Show online, idle, and offline presence, along with typing indicators.
-- Edit or delete messages when authorized, and add or remove reactions.
-- Apply community roles and permissions and carry out moderation actions.
-- Show unread counts and relevant notifications, and search accessible messages.
-- Record security-relevant moderation actions in an audit trail.
-- Provide a responsive browser interface with understandable validation and error messages.
+NexusChat will bring the main features needed for communication within an online community into one application. Users will be able to create an account, log in, update their profile and join communities.
 
-## 2.3 User Classes and Characteristics
+Within a community, members will be able to communicate through text channels. They will also be able to send direct messages to other users when they need to have a private conversation. Messages can be edited or deleted where permitted, and users will be able to react to messages.
 
-| **User Class**    | **Typical Needs**                                         | **Expected Access**                                                                                                                  |
-|-------------------|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| Guest             | Understand the service and create or access an account.   | Registration and login screens only.                                                                                                 |
-| Member            | Join communities and communicate with other members.      | Profile, communities, channels, messages, direct messages, reactions, search, and personal notification views.                       |
-| Moderator         | Help maintain a community and respond to rule violations. | Member capabilities plus moderation actions allowed by the assigned permissions.                                                     |
-| Community Admin   | Manage a community and its structure.                     | Community, membership, channel, role, and permission management, subject to system rules.                                            |
-| System Maintainer | Operate, troubleshoot, and deploy the application.        | Operational and deployment access as defined by the project; this does not automatically grant access to private user conversations. |
+The application will also show useful information such as whether a user is online, whether someone is typing and whether there are unread messages. A search feature will help users find messages without having to scroll through an entire conversation.
+
+Community owners and moderators will have additional permissions to manage members, control access and handle inappropriate behaviour. Important moderation actions may also be recorded so that they can be reviewed later.
+
+For the first version, we are focusing on text-based communication and community management. Voice and video calls, screen sharing, native mobile applications and end-to-end encryption are not included in the current scope unless the project requirements are changed and approved.
+
+##  2.3 User Classes and Characteristics
+
+| **User Class** | **Typical Needs** | **Expected Access** |
+|---|---|---|
+| Guest | Explore the application and understand its purpose before creating an account. | Access to registration and login screens. Guests must log in to use features that require an account. |
+| Member | Join communities, communicate with other members, and keep track of conversations. | Access to profiles, communities, channels, text messages, direct messages, reactions, message search, and personal notifications. |
+| Moderator | Help maintain a community, handle inappropriate content, and respond to rule violations. | Member features, along with moderation actions such as managing reported content or addressing member violations, depending on assigned permissions. |
+| Community Admin | Manage a community and organise its structure according to the community's needs. | Permissions to manage community settings, memberships, channels, roles, and member permissions, subject to the application's rules. |
+| System Maintainer | Keep the application running, troubleshoot technical issues, and manage deployment and maintenance activities. | Access to operational and deployment tools as required for the project. This role does not automatically provide access to users' private conversations. |
 
 ## 2.4 Operating Environment
 
-- A modern version of a supported browser, such as Chrome/Chromium, Firefox, or Safari.
-- Node.js LTS for the backend runtime.
-- PostgreSQL for persistent relational data.
-- HTTPS for web API traffic and WSS for WebSocket traffic in production.
-- Docker for consistent environments and Jenkins for CI/CD.
+NexusChat will run in a web browser, so users will not need to install a separate desktop application. It will be developed and tested using commonly used, up-to-date browsers.
+
+The frontend will use React, while Node.js will handle backend operations. PostgreSQL will store the application's data, including user details, communities, channels, and messages. REST APIs will be used for standard client-server communication, and WebSockets will support real-time features.
+
+Docker will be used to simplify the setup and execution of the application across development and testing environments. Jenkins will be used for continuous integration, including automated build and test steps.
+
+The application will require a working network connection to communicate with the backend. Features such as live messaging, typing indicators, and online status will also depend on the WebSocket connection being available.
 
 ## 2.5 Design and Implementation Constraints
 
-- The project will follow the Agile process required by the course and will track work in the team’s GitHub repository and backlog.
-- Changes to the protected main branch will be submitted through pull requests and reviewed before merging.
-- Automated build and test checks, code review, and security validation are part of the project workflow.
-- WebSockets will be used for real-time messaging and related live events.
-- The approved technology stack is React, Node.js LTS, PostgreSQL, WebSockets, Docker, Git/GitHub, Jenkins, and an agreed testing and code-quality toolchain.
-- Each team member should own a defined area of functionality and contribute to implementation as well as documentation.
+The development of NexusChat will follow the technology stack selected for the project. The frontend will use React, the backend will use Node.js, and PostgreSQL will be used for data storage. Any change to these technologies should be discussed and agreed upon by the team before implementation.
+
+The application will follow a client-server approach, with the frontend responsible for displaying information and collecting user input, while the backend handles application logic, validation, and database operations.
+Since NexusChat supports private messages and community-based communication, access control is an important part of its implementation. Users should not be able to access communities, channels, or conversations for which they do not have permission.
+
+The project will be developed using Git and GitHub for version control and collaboration. Changes will be submitted through pull requests rather than committed directly to the protected main branch. Jenkins will support the automated build and testing process.
+
+The team will follow an iterative development approach, implementing and testing features in manageable stages. The first version will focus on the agreed core features. Additional features outside the approved scope will not be added without discussion and approval.
 
 ## 2.6 Assumptions and Dependencies
 
-- Users have a working network connection and a supported browser.
-- The application can access the configured PostgreSQL database and required WebSocket services.
-- The team has access to the GitHub repository, project backlog, CI/CD environment, and test tools.
-- The deployment environment can provide HTTPS/WSS and store secrets outside source control.
-- Voice/video calling and other features explicitly outside the MVP will not be added without approval.
+The development and use of NexusChat depend on a few assumptions about the users, environment, and supporting technologies.
+Users are expected to have access to a supported web browser and a reasonably stable internet connection. An internet connection is required to access the application, and real-time features depend on a working connection between the browser and the backend.
+
+The backend and PostgreSQL database must be available for users to log in, retrieve information, and send messages. If the database or backend becomes unavailable, some or all application features may stop working until the issue is resolved.
+
+WebSocket connectivity is required for features such as live messages, typing indicators, and online status. If a WebSocket connection is interrupted, these features may not update immediately.
+The project also depends on the selected development tools and services being available and configured correctly. These include Node.js, PostgreSQL, Docker, GitHub, and Jenkins.
+
+The team assumes that configuration details and sensitive values, such as database credentials and authentication secrets, will be managed appropriately rather than exposed in the source code.
+Finally, the requirements and supporting documents must remain consistent as development progresses. If the team decides to introduce a major feature or change an existing requirement, the relevant documentation and tests will need to be updated.
 
 # 3. External Interface Requirements
 
@@ -157,13 +169,15 @@ The requirements below describe the expected behaviour of the MVP. “Shall” i
 
 ## 5.2 Community and Channel Management
 
-**FR-COM-01 \[High\]:** The system shall allow an authenticated member to create a community with a name that is unique for that owner. If the name does not meet the agreed validation rules or conflicts with an existing community owned by that user, creation shall fail with a useful message.
+NexusChat allows users to create communities and organise conversations into separate text channels. Community administrators will be responsible for managing their communities, while access to management features will depend on the permissions assigned to each user.
 
-**FR-COM-02 \[High\]:** The system shall allow a community admin with the required permission to invite users and manage community membership. Unauthorized users shall not be able to issue invitations or change membership.
+**FR-COM-01 [High]:** The system shall allow an authenticated member to create a community by providing a valid name. A user shall not be allowed to create another community with the same name under their ownership. If the name is invalid or conflicts with an existing community owned by the same user, the system shall reject the request and display a clear error message.
 
-**FR-COM-03 \[High\]:** The system shall allow an authorized community admin to create, rename, and delete text channels. The system shall reject these actions when the requester lacks permission or the supplied channel details are invalid.
+**FR-COM-02 [High]:** The system shall allow a community admin with the required permissions to invite users and manage community membership. Users without the required permissions shall not be allowed to send invitations or make unauthorized changes to membership. The system shall inform the user when an invitation or membership operation cannot be completed.
 
-**FR-COM-04 \[High\]:** The system shall check the requester’s role and channel/community permissions on the server before carrying out any protected action. A failed permission check shall leave the protected resource unchanged.
+**FR-COM-03 [High]:** The system shall allow an authorized community admin to create, rename, and delete text channels within their community. The system shall validate the supplied channel details and check the user's permissions before carrying out these operations. If the details are invalid or the user lacks the required permission, the operation shall be rejected.
+
+**FR-COM-04 [High]:** The system shall verify the requesting user's role and community or channel permissions on the server before performing any protected operation. If the user is not authorized, the system shall reject the request without making changes to the protected resource.
 
 ## 5.3 Real-Time Messaging and Direct Messages
 
@@ -195,13 +209,19 @@ The requirements below describe the expected behaviour of the MVP. “Shall” i
 
 # 6. Nonfunctional Requirements
 
-## 6.1 Performance Requirements
+## 6.1 Performance Requirementss
 
-The following are project targets and must be checked under a documented test load. The team should record the dataset, environment, number of concurrent clients, and measurement method in the test plan.
+NexusChat should respond quickly during normal use so that users can communicate without unnecessary delays. Since the application supports real-time messaging, performance is particularly important when several users are active in different communities at the same time.
 
-- The target for WebSocket message acknowledgement is no more than 500 ms at the 95th percentile (p95) under the defined test load.
-- Core UI/API operations should complete within 2 seconds under normal test conditions.
-- Search should return results within 2 seconds for the defined evaluation dataset.
+The following targets will be used to evaluate the application's performance:
+
+- **Real-time messaging:** The target for WebSocket message acknowledgement shall be no more than 500 ms at the 95th percentile (p95) under the defined test load.
+- **General operations:** Core UI/API operations, such as retrieving community information or loading a channel, should complete within 2 seconds under normal test conditions.
+- **Message search:** Search results should be returned within 2 seconds for the evaluation dataset defined in the test plan.
+- **Concurrent usage:** The application should support multiple users accessing communities, sending messages, and using other core features at the same time without unexpected failures under the agreed test load.
+- **Consistent behaviour:** The application should continue to handle valid requests correctly during performance testing. If a request cannot be completed, the system should return an appropriate error rather than silently failing.
+
+These targets will be checked during testing using a documented environment, dataset, and number of concurrent clients. The team will record the measurement method and test results in the test plan. If a target is not met, the team should investigate the cause and document the outcome before the final evaluation.
 
 ## 6.2 Safety Requirements
 
@@ -220,14 +240,18 @@ NexusChat is not a safety-critical system. However, actions that can remove a ch
 
 ## 6.4 Software Quality Attributes
 
-| **Attribute**   | **Expected Approach / Target**                                                                                                                |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| Maintainability | Keep the React UI, backend API, WebSocket handling, and persistence responsibilities separated into understandable modules.                   |
-| Testability     | Provide unit tests for core logic and integration tests for API, database, and WebSocket flows.                                               |
-| Reliability     | Handle disconnects and reconnects gracefully and avoid creating duplicate or corrupted messages during retries.                               |
-| Usability       | Make common chat actions understandable without requiring users to read technical documentation. Provide clear validation and error feedback. |
-| Portability     | Use Docker and documented configuration so the project can be started consistently in the intended environments.                              |
-| Security        | Resolve critical security findings before release, or document and obtain approval for any accepted exception.                                |
+NexusChat should be easy to maintain, test, and use as the project grows. The following quality attributes describe what the team should consider while developing and evaluating the application.
+
+| **Attribute** | **Expected Approach / Target** |
+|---|---|
+| Maintainability | The frontend, backend APIs, WebSocket handling, and database operations should be organised into separate modules so that changes can be made without unnecessarily affecting other parts of the application. |
+| Testability | The application should support unit and integration testing of important features, including authentication, community management, messaging, database operations, and WebSocket communication. |
+| Reliability | The application should handle temporary connection failures gracefully. Messages that have already been saved should remain available when users reconnect, and retry operations should be handled carefully to avoid unintended duplicate messages. |
+| Usability | Common tasks, such as joining a community, opening a channel, and sending a message, should be easy to understand. The interface should provide clear feedback when an action succeeds or fails. |
+| Portability | The project should use Docker and documented configuration so that team members can set up and run the application consistently in the intended development and testing environments. |
+| Security | Authentication, authorization, and input validation should be applied consistently. Critical security findings should be addressed before release, or any accepted exception should be documented and approved. |
+
+These attributes will be considered during implementation and testing. The team should use code reviews, automated tests, and the agreed code-quality tools to check whether the application follows these expectations.
 
 ## 6.5 Business and Domain Rules
 
@@ -239,29 +263,82 @@ NexusChat is not a safety-critical system. However, actions that can remove a ch
 
 # 7. Other Requirements
 
-- The database shall use primary keys, foreign keys, and uniqueness constraints where needed to protect data integrity.
-- Dates and times shall be stored consistently, preferably in UTC, and displayed to users in a suitable local format.
-- Application logs shall support troubleshooting without recording passwords, authentication tokens, or other secrets.
-- Field-level validation rules and data formats shall be kept consistent with the approved Field Layouts spreadsheet.
-- Requirement IDs and test references shall remain consistent with the Requirement Traceability Matrix.
+Apart from the functional and non-functional requirements described in the earlier sections, NexusChat must follow a few additional rules to keep its data consistent and make the application easier to maintain.
+
+- **Data integrity:** The database shall use primary keys, foreign keys, and uniqueness constraints wherever required to prevent invalid or duplicate records and maintain relationships between users, communities, channels, and messages.
+
+- **Date and time handling:** Dates and times shall be stored consistently, preferably in UTC, and displayed in a suitable local format when shown to users.
+
+- **Application logging:** The application shall maintain logs that help the team identify errors and troubleshoot issues. Passwords, authentication tokens, and other sensitive information shall not be included in these logs.
+
+- **Field validation:** Input fields, their data types, formats, and validation rules shall follow the approved Field Layouts spreadsheet. Any changes to these rules shall be reflected in the relevant documentation and implementation.
+
+- **Requirement traceability:** Functional and non-functional requirements shall use consistent IDs across the SRS, design documents, and Requirement Traceability Matrix (RTM). The RTM shall be updated whenever a requirement is added, changed, or removed.
+
+These requirements will help keep the application data reliable and ensure that the implementation, documentation, and tests remain consistent throughout development.
 
 # Appendix A: Glossary
 
-| **Term**                              | **Meaning in NexusChat**                                                                                             |
-|---------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| Community / Server                    | A persistent group space with members, roles, and channels.                                                          |
-| Channel                               | A text conversation space within a community.                                                                        |
-| DM (Direct Message)                   | A private one-to-one conversation between two users.                                                                 |
-| WebSocket                             | A persistent, two-way connection used to exchange real-time events.                                                  |
-| Presence                              | A user availability state, such as online, idle, or offline.                                                         |
-| Role                                  | A named set of permissions assigned within a community.                                                              |
-| MVP (Minimum Viable Product)          | The smallest agreed version of the product that meets the project’s core goals.                                      |
-| RTM (Requirement Traceability Matrix) | A record linking requirements to design elements, implementation, and tests.                                         |
-| CI/CD                                 | Continuous integration and continuous delivery/deployment practices used to automate build, test, and release steps. |
+This glossary explains the technical terms used throughout the NexusChat Software Requirements Specification.
+
+| **Term** | **Meaning in NexusChat** |
+|---|---|
+| Community / Server | A group space where users can join, communicate, and access channels based on their permissions. |
+| Channel | A separate conversation space within a community, used to discuss a particular topic. |
+| DM (Direct Message) | A private conversation between two users. |
+| WebSocket | A communication method that allows the browser and server to exchange real-time updates without repeatedly creating new connections. |
+| Presence | An indication of whether a user is online, idle, or offline. |
+| Role | A named set of permissions that determines what a user can do within a community. |
+| MVP (Minimum Viable Product) | The first agreed version of NexusChat that includes the core features required for the project. |
+| RTM (Requirement Traceability Matrix) | A document that links requirements to their related design elements and test cases so the team can track implementation and verification. |
+| CI/CD (Continuous Integration and Continuous Delivery/Deployment) | A development practice that automates parts of the build, testing, and delivery process. |
+| REST API | An interface that allows the frontend and backend to exchange requests and responses for operations such as account management and channel creation. |
+| PostgreSQL | The relational database used to store NexusChat data, including users, communities, channels, and messages. |
+| Docker | A tool used to package and run the application in a consistent environment. |
+| Jenkins | An automation tool used in the project to run configured build, testing, and delivery tasks. |
+
 
 # Appendix B: Field Layouts
 
-Use 08_Field_Layouts.xlsx as the detailed reference for field names, formats, validation rules, and required/optional status. Keep this SRS and the spreadsheet aligned when field rules change.
+## B.1 Purpose
+
+This appendix describes the data fields used in NexusChat. It specifies the field names, data types, lengths, descriptions, mandatory status, and applicable validation rules and constraints. These definitions help maintain consistency between the software requirements, database design, and application implementation.
+
+## B.2 Field Layout Specification
+
+Each field is defined using the following attributes:
+
+- **Entity:** The data entity to which the field belongs, such as User, Community, Channel, or Message.
+- **Field:** The name used to identify the field.
+- **Length:** The maximum permitted length or size, where applicable.
+- **Data Type:** The expected type or format of the field.
+- **Description:** A brief explanation of the field's purpose.
+- **Mandatory:** Indicates whether the field is required or optional.
+- **Constraints:** Specifies applicable validation rules, permitted values, uniqueness requirements, and primary-key or foreign-key relationships.
+
+## B.3 Entities Covered
+
+The field layouts cover the principal data entities required by NexusChat:
+
+1. **User:** Account details, username, email address, password hash, display name, and account status.
+2. **Community:** Community identifier, owner, name, and description.
+3. **Membership:** Relationships between users and communities, including assigned roles.
+4. **Channel:** Channel identifier, associated community, name, and type.
+5. **Message:** Message identifier, sender, content, associated channel, creation timestamp, and edit timestamp.
+6. **Reaction:** User reactions associated with messages.
+7. **Audit Event:** Records of relevant actions performed within the application.
+
+Additional fields required by approved features, including direct messaging and notifications, shall be incorporated into the data model as necessary.
+
+## B.4 Data Validation and Consistency
+
+All required fields must be validated before data is stored. Field lengths, data types, permitted values, and other constraints must be enforced consistently across the frontend, backend, and database wherever applicable.
+
+Primary-key and foreign-key relationships must preserve data integrity. Timestamps should follow the project's agreed UTC storage convention. Password hashes and other sensitive information must not be exposed through user-facing interfaces or application responses.
+
+## B.5 Maintenance
+
+Whenever an approved requirement or design decision changes the data fields, the corresponding requirements, database schema, implementation, and tests must be reviewed and updated. The field definitions must remain consistent throughout the project.
 
 # Appendix C: Requirement Traceability Matrix
 
