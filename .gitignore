@@ -43,6 +43,7 @@ Thumbs.db
 
 # Testing & Coverage
 coverage/
+.jest-cache/
 .nyc_output/
 *.lcov
 .pytest_cache/
