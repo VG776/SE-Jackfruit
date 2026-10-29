@@ -11,7 +11,8 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "migrate": "node src/db/migrate.js",
-    "test": "jest --runInBand && node --test tests/test-*.js",
+    "test": "jest --runInBand",
+    "test:integration": "node --test tests/test-*.js",
     "lint": "eslint src tests"
   },
   "dependencies": {
