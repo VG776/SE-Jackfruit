@@ -25,6 +25,29 @@ class UserRepository {
 
     return result.rows[0];
   }
+
+  async findById(id) {
+    const result = await this.pool.query(
+      `SELECT id, username, email, display_name, avatar_url, status, created_at, updated_at
+         FROM users
+        WHERE id = $1`,
+      [id],
+    );
+
+    return result.rows[0] || null;
+  }
+
+  async findByIdentifier(identifier) {
+    const result = await this.pool.query(
+      `SELECT id, username, email, password_hash, display_name, avatar_url, status, created_at, updated_at
+         FROM users
+        WHERE LOWER(username) = LOWER($1)
+           OR LOWER(email) = LOWER($1)`,
+      [identifier],
+    );
+
+    return result.rows[0] || null;
+  }
 }
 
 module.exports = { UserRepository };
