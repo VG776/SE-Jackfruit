@@ -3,6 +3,8 @@ const { AppError } = require('../errors/AppError');
 
 const titles = {
   400: 'Bad Request',
+  401: 'Unauthorized',
+  403: 'Forbidden',
   404: 'Not Found',
   409: 'Conflict',
   429: 'Too Many Requests',
