@@ -1,17 +1,17 @@
 
-const { verifyToken } = require("./auth");
-const { pool } = require("./db");
+const { verifyToken } = require('./auth');
+const { pool } = require('./db');
 
 // Verify the JWT and attach the authenticated user to the request.
 function requireAuth(req, res, next) {
   const authorization = req.headers.authorization;
 
   if (
-    typeof authorization !== "string" ||
-    !authorization.startsWith("Bearer ")
+    typeof authorization !== 'string' ||
+    !authorization.startsWith('Bearer ')
   ) {
     return res.status(401).json({
-      error: "Authentication required"
+      error: 'Authentication required'
     });
   }
 
@@ -19,16 +19,16 @@ function requireAuth(req, res, next) {
 
   if (!token) {
     return res.status(401).json({
-      error: "Authentication required"
+      error: 'Authentication required'
     });
   }
 
   try {
     const user = verifyToken(token);
 
-    if (!user || typeof user.sub !== "string" || !user.sub.trim()) {
+    if (!user || typeof user.sub !== 'string' || !user.sub.trim()) {
       return res.status(401).json({
-        error: "Invalid authentication token"
+        error: 'Invalid authentication token'
       });
     }
 
@@ -36,7 +36,7 @@ function requireAuth(req, res, next) {
     return next();
   } catch {
     return res.status(401).json({
-      error: "Invalid or expired authentication token"
+      error: 'Invalid or expired authentication token'
     });
   }
 }
@@ -60,11 +60,11 @@ function requireChannelMember(req, res, next) {
   const { channelId } = req.params;
 
   if (
-    typeof channelId !== "string" ||
+    typeof channelId !== 'string' ||
     !/^[a-zA-Z0-9_-]{1,64}$/.test(channelId)
   ) {
     return res.status(400).json({
-      error: "Invalid channel identifier"
+      error: 'Invalid channel identifier'
     });
   }
 
@@ -72,17 +72,17 @@ function requireChannelMember(req, res, next) {
     .then((allowed) => {
       if (!allowed) {
         return res.status(404).json({
-          error: "Resource not found"
+          error: 'Resource not found'
         });
       }
 
       return next();
     })
     .catch((error) => {
-      console.error("Channel authorization check failed:", error.message);
+      console.error('Channel authorization check failed:', error.message);
 
       return res.status(500).json({
-        error: "Request could not be processed"
+        error: 'Request could not be processed'
       });
     });
 }

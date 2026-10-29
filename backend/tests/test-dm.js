@@ -1,21 +1,21 @@
-require("dotenv").config({
-  path: require("path").resolve(__dirname, "../../.env")
+require('dotenv').config({
+  path: require('path').resolve(__dirname, '../../.env')
 });
 
-const WebSocket = require("ws");
-const jwt = require("jsonwebtoken");
+const WebSocket = require('ws');
+const jwt = require('jsonwebtoken');
 
 const secret = process.env.JWT_SECRET;
 
-if (!secret || secret === "your_jwt_secret_key_here") {
-  throw new Error("JWT_SECRET is not configured");
+if (!secret || secret === 'your_jwt_secret_key_here') {
+  throw new Error('JWT_SECRET is not configured');
 }
 
 function connectClient(userId) {
   const token = jwt.sign(
     { sub: userId },
     secret,
-    { algorithm: "HS256", expiresIn: "5m" }
+    { algorithm: 'HS256', expiresIn: '5m' }
   );
 
   return new Promise((resolve, reject) => {
@@ -31,9 +31,9 @@ function connectClient(userId) {
 
     function cleanup() {
       clearTimeout(timer);
-      socket.off("message", onMessage);
-      socket.off("error", onError);
-      socket.off("close", onClose);
+      socket.off('message', onMessage);
+      socket.off('error', onError);
+      socket.off('close', onClose);
     }
 
     function onMessage(data) {
@@ -45,7 +45,7 @@ function connectClient(userId) {
         return;
       }
 
-      if (event.type === "connection.ready") {
+      if (event.type === 'connection.ready') {
         cleanup();
         resolve(socket);
       }
@@ -65,9 +65,9 @@ function connectClient(userId) {
       );
     }
 
-    socket.on("message", onMessage);
-    socket.once("error", onError);
-    socket.once("close", onClose);
+    socket.on('message', onMessage);
+    socket.once('error', onError);
+    socket.once('close', onClose);
   });
 }
 
@@ -80,7 +80,7 @@ function waitForEvent(socket, expectedType, timeout = 3000) {
 
     function cleanup() {
       clearTimeout(timer);
-      socket.off("message", onMessage);
+      socket.off('message', onMessage);
     }
 
     function onMessage(data) {
@@ -98,7 +98,7 @@ function waitForEvent(socket, expectedType, timeout = 3000) {
       }
     }
 
-    socket.on("message", onMessage);
+    socket.on('message', onMessage);
   });
 }
 
@@ -110,28 +110,28 @@ async function main() {
   try {
     // Wait for all clients to authenticate before sending the DM.
     [alice, bob, charlie] = await Promise.all([
-      connectClient("test-alice"),
-      connectClient("test-bob"),
-      connectClient("test-charlie")
+      connectClient('test-alice'),
+      connectClient('test-bob'),
+      connectClient('test-charlie')
     ]);
 
-    alice.on("message", (data) => {
-      console.log("ALICE EVENT:", data.toString());
+    alice.on('message', (data) => {
+      console.log('ALICE EVENT:', data.toString());
     });
 
-    bob.on("message", (data) => {
-      console.log("BOB EVENT:", data.toString());
+    bob.on('message', (data) => {
+      console.log('BOB EVENT:', data.toString());
     });
 
-    const bobDm = waitForEvent(bob, "dm.created");
-    const charlieDm = waitForEvent(charlie, "dm.created", 1500);
+    const bobDm = waitForEvent(bob, 'dm.created');
+    const charlieDm = waitForEvent(charlie, 'dm.created', 1500);
 
     alice.send(
       JSON.stringify({
-        type: "dm.send",
+        type: 'dm.send',
         payload: {
-          recipientId: "test-bob",
-          content: "Hello Bob, this is a private message!"
+          recipientId: 'test-bob',
+          content: 'Hello Bob, this is a private message!'
         }
       })
     );
@@ -139,15 +139,15 @@ async function main() {
     const event = await bobDm;
 
     if (
-      event.payload.senderId !== "test-alice" ||
-      event.payload.recipientId !== "test-bob" ||
-      event.payload.content !== "Hello Bob, this is a private message!"
+      event.payload.senderId !== 'test-alice' ||
+      event.payload.recipientId !== 'test-bob' ||
+      event.payload.content !== 'Hello Bob, this is a private message!'
     ) {
-      throw new Error("DM payload did not match");
+      throw new Error('DM payload did not match');
     }
 
     console.log("PASS: Bob received Alice's DM");
-    console.log("PASS: DM payload is correct");
+    console.log('PASS: DM payload is correct');
 
     let charlieReceivedDm = false;
 
@@ -155,7 +155,7 @@ async function main() {
       await charlieDm;
       charlieReceivedDm = true;
     } catch (error) {
-      if (!error.message.startsWith("Timed out waiting for dm.created")) {
+      if (!error.message.startsWith('Timed out waiting for dm.created')) {
         throw error;
       }
     }
@@ -179,6 +179,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("FAIL:", error.message);
+  console.error('FAIL:', error.message);
   process.exitCode = 1;
 });

@@ -1,22 +1,22 @@
 
-require("dotenv").config({
-  path: require("path").resolve(__dirname, "../../.env")
+require('dotenv').config({
+  path: require('path').resolve(__dirname, '../../.env')
 });
 
-const WebSocket = require("ws");
-const jwt = require("jsonwebtoken");
+const WebSocket = require('ws');
+const jwt = require('jsonwebtoken');
 
 const SECRET = process.env.JWT_SECRET;
 
 if (!SECRET) {
-  throw new Error("JWT_SECRET is not configured");
+  throw new Error('JWT_SECRET is not configured');
 }
 
 function makeToken(userId) {
   return jwt.sign(
     { sub: userId },
     SECRET,
-    { algorithm: "HS256", expiresIn: "5m" }
+    { algorithm: 'HS256', expiresIn: '5m' }
   );
 }
 
@@ -28,30 +28,30 @@ function connect(userId) {
 
     const timer = setTimeout(() => {
       socket.terminate();
-      reject(new Error("Timed out connecting to WebSocket"));
+      reject(new Error('Timed out connecting to WebSocket'));
     }, 5000);
 
-    socket.once("open", () => clearTimeout(timer));
+    socket.once('open', () => clearTimeout(timer));
 
-    socket.once("error", (error) => {
+    socket.once('error', (error) => {
       clearTimeout(timer);
       reject(error);
     });
 
-    socket.once("message", (data) => {
+    socket.once('message', (data) => {
       let event;
 
       try {
         event = JSON.parse(data.toString());
       } catch {
         socket.close();
-        reject(new Error("Invalid WebSocket response"));
+        reject(new Error('Invalid WebSocket response'));
         return;
       }
 
-      if (event.type !== "connection.ready") {
+      if (event.type !== 'connection.ready') {
         socket.close();
-        reject(new Error("Expected connection.ready"));
+        reject(new Error('Expected connection.ready'));
         return;
       }
 
@@ -69,7 +69,7 @@ function waitForEvent(socket, expectedType, timeout = 3000) {
 
     function cleanup() {
       clearTimeout(timer);
-      socket.off("message", onMessage);
+      socket.off('message', onMessage);
     }
 
     function onMessage(data) {
@@ -87,7 +87,7 @@ function waitForEvent(socket, expectedType, timeout = 3000) {
       }
     }
 
-    socket.on("message", onMessage);
+    socket.on('message', onMessage);
   });
 }
 
@@ -95,22 +95,22 @@ async function main() {
   let socket;
 
   try {
-    socket = await connect("test-charlie");
+    socket = await connect('test-charlie');
 
-    const errorPromise = waitForEvent(socket, "error");
+    const errorPromise = waitForEvent(socket, 'error');
 
     socket.send(JSON.stringify({
-      type: "channel.join",
-      payload: { channelId: "general" }
+      type: 'channel.join',
+      payload: { channelId: 'general' }
     }));
 
     const event = await errorPromise;
 
-    if (!event.payload.message.includes("not a member")) {
-      throw new Error("Unexpected authorization response");
+    if (!event.payload.message.includes('not a member')) {
+      throw new Error('Unexpected authorization response');
     }
 
-    console.log("PASS: WebSocket non-member join rejected");
+    console.log('PASS: WebSocket non-member join rejected');
   } finally {
     if (socket && socket.readyState !== WebSocket.CLOSED) {
       socket.close();
@@ -119,6 +119,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("FAIL:", error.message);
+  console.error('FAIL:', error.message);
   process.exitCode = 1;
 });

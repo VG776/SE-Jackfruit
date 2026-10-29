@@ -1,22 +1,22 @@
 
-require("dotenv").config({
-  path: require("path").resolve(__dirname, "../../.env")
+require('dotenv').config({
+  path: require('path').resolve(__dirname, '../../.env')
 });
 
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = 'http://localhost:5000';
 const SECRET = process.env.JWT_SECRET;
 
 if (!SECRET) {
-  throw new Error("JWT_SECRET is not configured");
+  throw new Error('JWT_SECRET is not configured');
 }
 
 function makeToken(userId) {
   return jwt.sign(
     { sub: userId },
     SECRET,
-    { algorithm: "HS256", expiresIn: "5m" }
+    { algorithm: 'HS256', expiresIn: '5m' }
   );
 }
 
@@ -32,14 +32,14 @@ async function main() {
     );
   }
 
-  console.log("PASS: Unauthenticated read rejected");
+  console.log('PASS: Unauthenticated read rejected');
 
   // Test 2: A channel member should be allowed to read messages.
   const memberResponse = await fetch(
     `${BASE_URL}/api/channels/general/messages`,
     {
       headers: {
-        Authorization: `Bearer ${makeToken("test-alice")}`
+        Authorization: `Bearer ${makeToken('test-alice')}`
       }
     }
   );
@@ -50,14 +50,14 @@ async function main() {
     );
   }
 
-  console.log("PASS: Authorized channel member can read messages");
+  console.log('PASS: Authorized channel member can read messages');
 
   // Test 3: A non-member must not read channel messages.
   const outsiderResponse = await fetch(
     `${BASE_URL}/api/channels/general/messages`,
     {
       headers: {
-        Authorization: `Bearer ${makeToken("test-charlie")}`
+        Authorization: `Bearer ${makeToken('test-charlie')}`
       }
     }
   );
@@ -68,19 +68,19 @@ async function main() {
     );
   }
 
-  console.log("PASS: Non-member cannot read protected messages");
+  console.log('PASS: Non-member cannot read protected messages');
 
   // Test 4: A non-member must not send a message.
   const writeResponse = await fetch(
     `${BASE_URL}/api/channels/general/messages`,
     {
-      method: "POST",
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${makeToken("test-charlie")}`,
-        "Content-Type": "application/json"
+        Authorization: `Bearer ${makeToken('test-charlie')}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        content: "Unauthorized test message"
+        content: 'Unauthorized test message'
       })
     }
   );
@@ -91,11 +91,11 @@ async function main() {
     );
   }
 
-  console.log("PASS: Non-member cannot send protected messages");
-  console.log("All REST authorization tests passed.");
+  console.log('PASS: Non-member cannot send protected messages');
+  console.log('All REST authorization tests passed.');
 }
 
 main().catch((error) => {
-  console.error("FAIL:", error.message);
+  console.error('FAIL:', error.message);
   process.exitCode = 1;
 });

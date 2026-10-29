@@ -1,21 +1,21 @@
 
-require("dotenv").config({
-  path: require("path").resolve(__dirname, "../../.env")
+require('dotenv').config({
+  path: require('path').resolve(__dirname, '../../.env')
 });
 
-const WebSocket = require("ws");
-const jwt = require("jsonwebtoken");
+const WebSocket = require('ws');
+const jwt = require('jsonwebtoken');
 
 const secret = process.env.JWT_SECRET;
 
-if (!secret || secret === "your_jwt_secret_key_here") {
-  throw new Error("JWT_SECRET is not configured");
+if (!secret || secret === 'your_jwt_secret_key_here') {
+  throw new Error('JWT_SECRET is not configured');
 }
 
 const token = jwt.sign(
-  { sub: "test-outsider" },
+  { sub: 'test-outsider' },
   secret,
-  { algorithm: "HS256", expiresIn: "5m" }
+  { algorithm: 'HS256', expiresIn: '5m' }
 );
 
 const socket = new WebSocket(
@@ -29,7 +29,7 @@ function finish(success, message) {
   finished = true;
 
   clearTimeout(timer);
-  console.log(`${success ? "PASS" : "FAIL"}: ${message}`);
+  console.log(`${success ? 'PASS' : 'FAIL'}: ${message}`);
 
   socket.close();
 
@@ -37,17 +37,17 @@ function finish(success, message) {
 }
 
 const timer = setTimeout(() => {
-  finish(false, "Timed out waiting for channel authorization result");
+  finish(false, 'Timed out waiting for channel authorization result');
 }, 5000);
 
-socket.on("open", () => {
+socket.on('open', () => {
   socket.send(JSON.stringify({
-    type: "channel.join",
-    payload: { channelId: "general" }
+    type: 'channel.join',
+    payload: { channelId: 'general' }
   }));
 });
 
-socket.on("message", (data) => {
+socket.on('message', (data) => {
   let event;
 
   try {
@@ -56,24 +56,24 @@ socket.on("message", (data) => {
     return;
   }
 
-  if (event.type === "channel.joined") {
-    finish(false, "Non-member was allowed to join general");
+  if (event.type === 'channel.joined') {
+    finish(false, 'Non-member was allowed to join general');
   }
 
   if (
-    event.type === "error" &&
+    event.type === 'error' &&
     event.payload?.message ===
-      "You are not a member of this channel"
+      'You are not a member of this channel'
   ) {
-    finish(true, "Non-member rejected from general");
+    finish(true, 'Non-member rejected from general');
   }
 });
 
-socket.on("error", (error) => {
+socket.on('error', (error) => {
   finish(false, `WebSocket error: ${error.message}`);
 });
 
-socket.on("close", (code, reason) => {
+socket.on('close', (code, reason) => {
   if (!finished) {
     finish(
       false,

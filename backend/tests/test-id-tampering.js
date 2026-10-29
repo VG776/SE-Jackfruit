@@ -1,27 +1,27 @@
 
-require("dotenv").config({
-  path: require("path").resolve(__dirname, "../../.env")
+require('dotenv').config({
+  path: require('path').resolve(__dirname, '../../.env')
 });
 
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = 'http://localhost:5000';
 const SECRET = process.env.JWT_SECRET;
 
 if (!SECRET) {
-  throw new Error("JWT_SECRET is not configured");
+  throw new Error('JWT_SECRET is not configured');
 }
 
 function makeToken(userId) {
   return jwt.sign(
     { sub: userId },
     SECRET,
-    { algorithm: "HS256", expiresIn: "5m" }
+    { algorithm: 'HS256', expiresIn: '5m' }
   );
 }
 
 async function main() {
-  const token = makeToken("test-alice");
+  const token = makeToken('test-alice');
 
   // Alice is authorized for "general" in the test database.
   const allowed = await fetch(
@@ -37,10 +37,10 @@ async function main() {
     );
   }
 
-  console.log("PASS: Alice can access her authorized channel");
+  console.log('PASS: Alice can access her authorized channel');
 
   // Try changing the channel ID to an unrelated identifier.
-  const changedId = "restricted-room-test";
+  const changedId = 'restricted-room-test';
 
   const denied = await fetch(
     `${BASE_URL}/api/channels/${changedId}/messages`,
@@ -55,17 +55,17 @@ async function main() {
     );
   }
 
-  console.log("PASS: Changing the channel ID does not grant read access");
+  console.log('PASS: Changing the channel ID does not grant read access');
 
   const deniedWrite = await fetch(
     `${BASE_URL}/api/channels/${changedId}/messages`,
     {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ content: "Unauthorized write test" })
+      body: JSON.stringify({ content: 'Unauthorized write test' })
     }
   );
 
@@ -75,10 +75,10 @@ async function main() {
     );
   }
 
-  console.log("PASS: Changing the channel ID does not grant write access");
+  console.log('PASS: Changing the channel ID does not grant write access');
 }
 
 main().catch((error) => {
-  console.error("FAIL:", error.message);
+  console.error('FAIL:', error.message);
   process.exitCode = 1;
 });

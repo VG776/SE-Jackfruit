@@ -1,33 +1,41 @@
 
-require("dotenv").config({
-  path: require("path").resolve(__dirname, "../../.env")
+require('dotenv').config({
+  path: require('path').resolve(__dirname, '../../.env')
 });
 
-const express = require("express");
-const http = require("http");
-const WebSocket = require("ws");
-const { randomUUID } = require("crypto");
-const { verifyToken } = require("./auth");
-const { pool } = require("./db");
+const http = require('http');
+const WebSocket = require('ws');
+const { randomUUID } = require('crypto');
+const { verifyToken } = require('./auth');
+const { pool } = require('./db');
 const {
   requireAuth,
   requireChannelMember
-} = require("./authorization");
+} = require('./authorization');
 
-const app = express();
-app.use(express.json({ limit: "16kb" }));
+const { UserRepository } = require('./repositories/userRepository');
+const { AuthService } = require('./services/authService');
+const { createApp, addErrorHandlers } = require('./app');
+
+const userRepository = new UserRepository(pool);
+const authService = new AuthService(userRepository);
+
+const app = createApp({
+  authService,
+  deferErrorHandlers: true
+});
 
 // Public health endpoint.
-app.get("/health", (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({
-    status: "ok",
-    service: "NexusChat backend"
+    status: 'ok',
+    service: 'NexusChat backend'
   });
 });
 
 // REST: Read messages only if the authenticated user is a channel member.
 app.get(
-  "/api/channels/:channelId/messages",
+  '/api/channels/:channelId/messages',
   requireAuth,
   requireChannelMember,
   async (req, res) => {
@@ -51,10 +59,9 @@ app.get(
         }))
       });
     } catch (error) {
-      console.error("Message read failed:", error.message);
-
+      console.error('Message read failed:', error.message);
       return res.status(500).json({
-        error: "Request could not be processed"
+        error: 'Request could not be processed'
       });
     }
   }
@@ -62,7 +69,7 @@ app.get(
 
 // REST: Send messages only if the authenticated user is a channel member.
 app.post(
-  "/api/channels/:channelId/messages",
+  '/api/channels/:channelId/messages',
   requireAuth,
   requireChannelMember,
   async (req, res) => {
@@ -70,12 +77,12 @@ app.post(
     const channelId = req.params.channelId;
 
     if (
-      typeof content !== "string" ||
+      typeof content !== 'string' ||
       !content.trim() ||
       content.length > 2000
     ) {
       return res.status(400).json({
-        error: "Message must contain 1–2000 characters"
+        error: 'Message must contain 1–2000 characters'
       });
     }
 
@@ -101,7 +108,7 @@ app.post(
 
       if (result.rowCount === 0) {
         return res.status(404).json({
-          error: "Resource not found"
+          error: 'Resource not found'
         });
       }
 
@@ -117,16 +124,17 @@ app.post(
         }
       });
     } catch (error) {
-      console.error("Message write failed:", error.message);
-
+      console.error('Message write failed:', error.message);
       return res.status(500).json({
-        error: "Request could not be processed"
+        error: 'Request could not be processed'
       });
     }
   }
 );
 
-// Create the server only after all REST routes are registered.
+// Register 404 and error handlers only after all REST routes.
+addErrorHandlers(app);
+
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
@@ -151,16 +159,15 @@ async function isChannelMember(channelId, userId) {
   return result.rowCount > 0;
 }
 
-
 async function getOrCreateConversation(userA, userB) {
   if (
-    typeof userA !== "string" ||
+    typeof userA !== 'string' ||
     !userA.trim() ||
-    typeof userB !== "string" ||
+    typeof userB !== 'string' ||
     !userB.trim() ||
     userA === userB
   ) {
-    throw new Error("Invalid conversation participants");
+    throw new Error('Invalid conversation participants');
   }
 
   const [user1, user2] = [userA, userB].sort();
@@ -177,28 +184,24 @@ async function getOrCreateConversation(userA, userB) {
 
   const conversation = result.rows[0];
 
-  // Defense in depth: the returned conversation must contain
-  // exactly the two requested participants.
   if (
     !conversation ||
-    !(
-      conversation.user1_id === user1 &&
-      conversation.user2_id === user2
-    )
+    conversation.user1_id !== user1 ||
+    conversation.user2_id !== user2
   ) {
-    throw new Error("Conversation authorization failed");
+    throw new Error('Conversation authorization failed');
   }
 
   return conversation;
 }
 
 // Authenticate every WebSocket connection before accepting events.
-wss.on("connection", (socket, request) => {
-  const requestUrl = new URL(request.url, "http://localhost");
-  const token = requestUrl.searchParams.get("token");
+wss.on('connection', (socket, request) => {
+  const requestUrl = new URL(request.url, 'http://localhost');
+  const token = requestUrl.searchParams.get('token');
 
   if (!token) {
-    socket.close(1008, "Authentication required");
+    socket.close(1008, 'Authentication required');
     return;
   }
 
@@ -207,16 +210,16 @@ wss.on("connection", (socket, request) => {
   try {
     user = verifyToken(token);
   } catch {
-    socket.close(1008, "Invalid or expired token");
+    socket.close(1008, 'Invalid or expired token');
     return;
   }
 
   if (
     !user ||
-    typeof user.sub !== "string" ||
+    typeof user.sub !== 'string' ||
     !user.sub.trim()
   ) {
-    socket.close(1008, "Invalid token payload");
+    socket.close(1008, 'Invalid token payload');
     return;
   }
 
@@ -225,25 +228,25 @@ wss.on("connection", (socket, request) => {
     channels: new Set()
   });
 
-  console.log("An authenticated WebSocket client connected.");
+  console.log('An authenticated WebSocket client connected.');
 
-  sendEvent(socket, "connection.ready", {
-    message: "Connected to NexusChat"
+  sendEvent(socket, 'connection.ready', {
+    message: 'Connected to NexusChat'
   });
 
-  socket.on("message", async (data) => {
+  socket.on('message', async (data) => {
     try {
       const event = JSON.parse(data.toString());
 
       if (
         !event ||
-        typeof event.type !== "string" ||
+        typeof event.type !== 'string' ||
         !event.payload ||
-        typeof event.payload !== "object" ||
+        typeof event.payload !== 'object' ||
         Array.isArray(event.payload)
       ) {
-        sendEvent(socket, "error", {
-          message: "Invalid event format"
+        sendEvent(socket, 'error', {
+          message: 'Invalid event format'
         });
         return;
       }
@@ -252,57 +255,53 @@ wss.on("connection", (socket, request) => {
       if (!client) return;
 
       // Join a channel only after verifying membership in the database.
-      if (event.type === "channel.join") {
+      if (event.type === 'channel.join') {
         const { channelId } = event.payload;
 
         if (
-          typeof channelId !== "string" ||
+          typeof channelId !== 'string' ||
           !/^[a-zA-Z0-9_-]{1,64}$/.test(channelId)
         ) {
-          sendEvent(socket, "error", {
-            message: "Invalid channelId"
+          sendEvent(socket, 'error', {
+            message: 'Invalid channelId'
           });
           return;
         }
 
         if (!(await isChannelMember(channelId, client.userId))) {
-          sendEvent(socket, "error", {
-            message: "You are not a member of this channel"
+          sendEvent(socket, 'error', {
+            message: 'You are not a member of this channel'
           });
           return;
         }
 
         client.channels.add(channelId);
-
-        sendEvent(socket, "channel.joined", {
-          channelId
-        });
-
+        sendEvent(socket, 'channel.joined', { channelId });
         return;
       }
 
       // Send channel messages only after membership and join checks.
-      if (event.type === "message.send") {
+      if (event.type === 'message.send') {
         const { channelId, content } = event.payload;
 
         if (
-          typeof channelId !== "string" ||
+          typeof channelId !== 'string' ||
           !/^[a-zA-Z0-9_-]{1,64}$/.test(channelId) ||
           !client.channels.has(channelId)
         ) {
-          sendEvent(socket, "error", {
-            message: "Join this channel before sending messages"
+          sendEvent(socket, 'error', {
+            message: 'Join this channel before sending messages'
           });
           return;
         }
 
         if (
-          typeof content !== "string" ||
+          typeof content !== 'string' ||
           !content.trim() ||
           content.length > 2000
         ) {
-          sendEvent(socket, "error", {
-            message: "Message must contain 1–2000 characters"
+          sendEvent(socket, 'error', {
+            message: 'Message must contain 1–2000 characters'
           });
           return;
         }
@@ -310,9 +309,8 @@ wss.on("connection", (socket, request) => {
         // Recheck membership in case access was revoked after joining.
         if (!(await isChannelMember(channelId, client.userId))) {
           client.channels.delete(channelId);
-
-          sendEvent(socket, "error", {
-            message: "Resource not found"
+          sendEvent(socket, 'error', {
+            message: 'Resource not found'
           });
           return;
         }
@@ -331,7 +329,6 @@ wss.on("connection", (socket, request) => {
         );
 
         const row = result.rows[0];
-
         const message = {
           messageId: row.message_id,
           channelId: row.channel_id,
@@ -343,38 +340,37 @@ wss.on("connection", (socket, request) => {
         // Deliver only to sockets that joined this channel.
         for (const [recipient, recipientData] of clients) {
           if (recipientData.channels.has(channelId)) {
-            sendEvent(recipient, "message.created", message);
+            sendEvent(recipient, 'message.created', message);
           }
         }
 
         return;
       }
 
-      // Send direct messages. Recipient identity validation against the
-      // application's user store must be added when that schema is confirmed.
-      if (event.type === "dm.send") {
+      // Send direct messages to the two conversation participants.
+      if (event.type === 'dm.send') {
         const { recipientId, content } = event.payload;
 
         if (
-          typeof recipientId !== "string" ||
+          typeof recipientId !== 'string' ||
           !recipientId.trim() ||
           recipientId.length > 255 ||
           recipientId !== recipientId.trim() ||
           recipientId === client.userId
         ) {
-          sendEvent(socket, "error", {
-            message: "Invalid DM recipient"
+          sendEvent(socket, 'error', {
+            message: 'Invalid DM recipient'
           });
           return;
         }
 
         if (
-          typeof content !== "string" ||
+          typeof content !== 'string' ||
           !content.trim() ||
           content.length > 2000
         ) {
-          sendEvent(socket, "error", {
-            message: "Message must contain 1–2000 characters"
+          sendEvent(socket, 'error', {
+            message: 'Message must contain 1–2000 characters'
           });
           return;
         }
@@ -384,8 +380,6 @@ wss.on("connection", (socket, request) => {
           recipientId
         );
 
-        // Verify the returned conversation includes the authenticated sender
-        // before storing or delivering the message.
         if (
           !conversation ||
           (
@@ -397,8 +391,8 @@ wss.on("connection", (socket, request) => {
             conversation.user2_id !== recipientId
           )
         ) {
-          sendEvent(socket, "error", {
-            message: "Request could not be processed"
+          sendEvent(socket, 'error', {
+            message: 'Request could not be processed'
           });
           return;
         }
@@ -418,7 +412,6 @@ wss.on("connection", (socket, request) => {
         );
 
         const row = result.rows[0];
-
         const dm = {
           messageId: row.message_id,
           conversationId: row.conversation_id,
@@ -434,32 +427,31 @@ wss.on("connection", (socket, request) => {
             recipientData.userId === conversation.user1_id ||
             recipientData.userId === conversation.user2_id
           ) {
-            sendEvent(recipient, "dm.created", dm);
+            sendEvent(recipient, 'dm.created', dm);
           }
         }
 
         return;
       }
 
-      sendEvent(socket, "error", {
-        message: "Unsupported event type"
+      sendEvent(socket, 'error', {
+        message: 'Unsupported event type'
       });
     } catch (error) {
-      console.error("WebSocket event failed:", error.message);
-
-      sendEvent(socket, "error", {
-        message: "Request could not be processed. Please try again."
+      console.error('WebSocket event failed:', error.message);
+      sendEvent(socket, 'error', {
+        message: 'Request could not be processed. Please try again.'
       });
     }
   });
 
-  socket.on("close", () => {
+  socket.on('close', () => {
     clients.delete(socket);
-    console.log("A WebSocket client disconnected.");
+    console.log('A WebSocket client disconnected.');
   });
 
-  socket.on("error", (error) => {
-    console.error("WebSocket error:", error.message);
+  socket.on('error', (error) => {
+    console.error('WebSocket error:', error.message);
   });
 });
 
@@ -468,3 +460,12 @@ const PORT = Number(process.env.PORT || process.env.API_PORT || 5000);
 server.listen(PORT, () => {
   console.log(`NexusChat backend running on port ${PORT}`);
 });
+
+async function shutDown() {
+  server.close(async () => {
+    await pool.end();
+  });
+}
+
+process.on('SIGINT', shutDown);
+process.on('SIGTERM', shutDown);
