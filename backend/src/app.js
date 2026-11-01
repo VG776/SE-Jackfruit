@@ -1,11 +1,13 @@
 const express = require('express');
 const { createAuthRouter } = require('./routes/authRoutes');
+const { createChannelRouter } = require('./routes/channelRoutes');
 const { createUserRouter } = require('./routes/userRoutes');
 const { createCommunityRouter } = require('./routes/communityRoutes');
+const { createAuthenticateMiddleware } = require('./middleware/authenticate');
 const { errorHandler } = require('./middleware/errorHandler');
 const { AppError } = require('./errors/AppError');
 
-function createApp({ authService, communityService, enableRateLimit = true }) {
+function createApp({ authService, communityService, channelService, authenticate, enableRateLimit = true }) {
   if (!authService) {
     throw new Error('authService is required');
   }
@@ -17,6 +19,11 @@ function createApp({ authService, communityService, enableRateLimit = true }) {
   app.use('/api/users', createUserRouter(authService));
   if (communityService) {
     app.use('/api/communities', createCommunityRouter(communityService, authService));
+  }
+
+  if (channelService) {
+    const channelAuthenticate = authenticate || createAuthenticateMiddleware(authService);
+    app.use('/api', createChannelRouter(channelService, channelAuthenticate));
   }
 
   app.use((request, _response, next) => {
