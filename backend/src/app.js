@@ -7,7 +7,14 @@ const { createAuthenticateMiddleware } = require('./middleware/authenticate');
 const { errorHandler } = require('./middleware/errorHandler');
 const { AppError } = require('./errors/AppError');
 
-function createApp({ authService, communityService, channelService, authenticate, enableRateLimit = true }) {
+function createApp({
+  authService,
+  communityService,
+  channelService,
+  channelPermissionRepository,
+  authenticate,
+  enableRateLimit = true,
+}) {
   if (!authService) {
     throw new Error('authService is required');
   }
@@ -23,7 +30,10 @@ function createApp({ authService, communityService, channelService, authenticate
 
   if (channelService) {
     const channelAuthenticate = authenticate || createAuthenticateMiddleware(authService);
-    app.use('/api', createChannelRouter(channelService, channelAuthenticate));
+    app.use(
+      '/api',
+      createChannelRouter(channelService, channelAuthenticate, channelPermissionRepository),
+    );
   }
 
   app.use((request, _response, next) => {

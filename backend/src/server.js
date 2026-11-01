@@ -16,7 +16,12 @@ const channelRepository = new ChannelRepository(pool);
 const channelPermissionRepository = new ChannelPermissionRepository(pool);
 const authService = new AuthService(userRepository);
 const channelService = new ChannelService(channelRepository, channelPermissionRepository);
-const app = createApp({ authService, communityService, channelService });
+const app = createApp({
+  authService,
+  communityService,
+  channelService,
+  channelPermissionRepository,
+});
 
 const server = app.listen(port, () => {
   console.log(`NexusChat API listening on port ${port}.`);

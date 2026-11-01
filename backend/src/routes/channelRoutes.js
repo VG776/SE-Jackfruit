@@ -1,6 +1,7 @@
 const express = require('express');
 const { createChannelController } = require('../controllers/channelController');
 const { requireAuthenticatedUser } = require('../middleware/requireAuthenticatedUser');
+const { createAuthorizeChannelManagement } = require('../middleware/authorizeChannelManagement');
 const { validate } = require('../middleware/validate');
 const {
   createChannelSchema,
@@ -10,7 +11,7 @@ const {
   confirmDeleteSchema,
 } = require('../validation/channelSchemas');
 
-function createChannelRouter(channelService, authenticate) {
+function createChannelRouter(channelService, authenticate, permissionRepository = null) {
   const router = express.Router();
   const controller = createChannelController(channelService);
   const validateCommunityParams = validate(communityParamsSchema, {
@@ -25,12 +26,19 @@ function createChannelRouter(channelService, authenticate) {
     source: 'query',
     target: 'validatedQuery',
   });
+  const authorizeCommunityManagement = permissionRepository
+    ? createAuthorizeChannelManagement(permissionRepository)
+    : (_request, _response, next) => next();
+  const authorizeChannelManagement = permissionRepository
+    ? createAuthorizeChannelManagement(permissionRepository, { resource: 'channelId' })
+    : (_request, _response, next) => next();
 
   router.post(
     '/communities/:communityId/channels',
     authenticate,
     requireAuthenticatedUser,
     validateCommunityParams,
+    authorizeCommunityManagement,
     validate(createChannelSchema),
     controller.create,
   );
@@ -39,6 +47,7 @@ function createChannelRouter(channelService, authenticate) {
     authenticate,
     requireAuthenticatedUser,
     validateChannelParams,
+    authorizeChannelManagement,
     validate(renameChannelSchema),
     controller.rename,
   );
@@ -47,6 +56,7 @@ function createChannelRouter(channelService, authenticate) {
     authenticate,
     requireAuthenticatedUser,
     validateChannelParams,
+    authorizeChannelManagement,
     validateDeleteConfirmation,
     controller.delete,
   );

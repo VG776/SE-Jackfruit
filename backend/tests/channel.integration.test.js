@@ -67,6 +67,7 @@ async function buildTestContext() {
   const app = createApp({
     authService: { register: jest.fn() },
     channelService,
+    channelPermissionRepository: permissionRepository,
     authenticate,
     enableRateLimit: false,
   });
@@ -208,6 +209,29 @@ describe('US-06 channel management API', () => {
     );
     const count = await pool.query('SELECT COUNT(*)::integer AS count FROM channels');
     expect(count.rows[0].count).toBe(0);
+  });
+
+  test('rejects an unauthorized request before validating the body', async () => {
+    const response = await request(app)
+      .post(`/api/communities/${COMMUNITY_ID}/channels`)
+      .set('x-test-user-id', MEMBER_ID)
+      .send({ name: '<script>', type: 'voice', unexpected: true });
+
+    expect(response.status).toBe(403);
+    expect(response.body.code).toBe('INSUFFICIENT_PERMISSIONS');
+  });
+
+  test('does not allow a member to mutate a channel by changing its identifier', async () => {
+    const created = await createChannel(app);
+
+    const response = await request(app)
+      .patch(`/api/channels/${created.body.data.id}`)
+      .set('x-test-user-id', MEMBER_ID)
+      .send({ name: 'member-renamed-channel' });
+
+    expect(response.status).toBe(403);
+    const stored = await pool.query('SELECT name FROM channels WHERE id = $1', [created.body.data.id]);
+    expect(stored.rows[0].name).toBe('general-chat');
   });
 
   test('allows an admin member to create, rename, and delete a channel', async () => {
