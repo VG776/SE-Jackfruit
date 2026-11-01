@@ -1,8 +1,8 @@
 const { AppError } = require('../errors/AppError');
 
-function validate(schema) {
+function validate(schema, { source = 'body', target = 'validatedBody' } = {}) {
   return (request, _response, next) => {
-    const result = schema.safeParse(request.body);
+    const result = schema.safeParse(request[source]);
 
     if (!result.success) {
       return next(
@@ -18,7 +18,7 @@ function validate(schema) {
       );
     }
 
-    request.validatedBody = result.data;
+    request[target] = result.data;
     return next();
   };
 }

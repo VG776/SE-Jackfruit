@@ -478,6 +478,7 @@ interface IAuthService {
 interface ICommunityService {
   createCommunity(userId: string, name: string, desc: string): Promise<CommunityDTO>;
   createChannel(userId: string, communityId: string, channelName: string): Promise<ChannelDTO>;
+  renameChannel(userId: string, channelId: string, channelName: string): Promise<ChannelDTO>;
   verifyPermission(userId: string, communityId: string, requiredPermission: string): Promise<boolean>;
   deleteChannel(userId: string, channelId: string): Promise<void>;
 }
@@ -493,6 +494,32 @@ interface IModerationService {
   recordAuditEvent(communityId: string, actorId: string, action: string, targetId: string, details: object): Promise<void>;
 }
 ```
+
+### 5.2 Channel Management Integration Contract
+
+The channel-management routes use the US-02 Bearer-token authentication middleware to populate
+`request.user.id` (or the JWT `sub` claim) before the route executes. The channel module
+then applies a server-side permission check before every create, rename, or delete operation.
+The permission adapter grants `MANAGE_CHANNELS` to the community owner and members whose
+community role is `admin`; it fails closed for moderators, ordinary members, and users with
+no membership. The check is performed against server-side database state before every
+channel mutation.
+
+Channel names are trimmed and normalized to lowercase kebab-case, remain unique within a
+community, and are limited to the approved 100-character field size. Deletion requires the
+explicit `confirm=true` query parameter and removes the channel through the documented
+destructive endpoint.
+
+Names must contain at least one letter or number; invalid input returns `400` with
+field-specific `invalidParams`. Duplicate normalized names return `409`; a missing channel
+returns `404`. Successful create/rename responses use `{ status: "success", data: ChannelDTO }`.
+Deletion permanently removes the channel row and returns an empty `204` response.
+
+Run `npm run migrate` from `backend` before starting the API. Migration
+`003_create_channels.sql` follows the shared US-04 communities migration and adds channels
+and the community membership roles required by channel authorization. No membership-management
+endpoints are introduced. Automated API tests cover the real register/login/community/channel/logout
+flow as well as owner/admin success and member/moderator/non-member/cross-community denial.
 
 ---
 
