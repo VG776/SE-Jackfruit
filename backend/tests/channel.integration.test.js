@@ -81,6 +81,33 @@ async function createChannel(app, name = 'General Chat') {
     .send({ name, type: 'text' });
 }
 
+describe('channel authentication routing', () => {
+  test.each([
+    ['get', '/api/does-not-exist'],
+    ['post', '/api/does-not-exist'],
+    ['get', `/api/channels/${COMMUNITY_ID}`],
+    ['patch', `/api/channels/${COMMUNITY_ID}/does-not-exist`],
+  ])('preserves 404 for unmatched %s %s without authenticating', async (method, url) => {
+    const authService = { authenticateToken: jest.fn() };
+    const app = createApp({ authService, channelService: {}, enableRateLimit: false });
+    const response = await request(app)[method](url).set('Authorization', 'Bearer invalid-token');
+    expect(response.status).toBe(404);
+    expect(response.body.code).toBe('RESOURCE_NOT_FOUND');
+    expect(authService.authenticateToken).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ['post', `/api/communities/${COMMUNITY_ID}/channels`],
+    ['patch', `/api/channels/${COMMUNITY_ID}`],
+    ['delete', `/api/channels/${COMMUNITY_ID}?confirm=true`],
+  ])('still requires authentication for %s %s', async (method, url) => {
+    const app = createApp({ authService: {}, channelService: {}, enableRateLimit: false });
+    const response = await request(app)[method](url);
+    expect(response.status).toBe(401);
+    expect(response.body.code).toBe('UNAUTHORIZED');
+  });
+});
+
 describe('US-06 channel management API', () => {
   let app;
   let pool;

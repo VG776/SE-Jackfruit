@@ -10,7 +10,7 @@ const {
   confirmDeleteSchema,
 } = require('../validation/channelSchemas');
 
-function createChannelRouter(channelService) {
+function createChannelRouter(channelService, authenticate) {
   const router = express.Router();
   const controller = createChannelController(channelService);
   const validateCommunityParams = validate(communityParamsSchema, {
@@ -26,21 +26,26 @@ function createChannelRouter(channelService) {
     target: 'validatedQuery',
   });
 
-  router.use(requireAuthenticatedUser);
   router.post(
     '/communities/:communityId/channels',
+    authenticate,
+    requireAuthenticatedUser,
     validateCommunityParams,
     validate(createChannelSchema),
     controller.create,
   );
   router.patch(
     '/channels/:channelId',
+    authenticate,
+    requireAuthenticatedUser,
     validateChannelParams,
     validate(renameChannelSchema),
     controller.rename,
   );
   router.delete(
     '/channels/:channelId',
+    authenticate,
+    requireAuthenticatedUser,
     validateChannelParams,
     validateDeleteConfirmation,
     controller.delete,

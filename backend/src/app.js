@@ -22,8 +22,8 @@ function createApp({ authService, communityService, channelService, authenticate
   }
 
   if (channelService) {
-    const channelMiddleware = [authenticate || createAuthenticateMiddleware(authService)];
-    app.use('/api', ...channelMiddleware, createChannelRouter(channelService));
+    const channelAuthenticate = authenticate || createAuthenticateMiddleware(authService);
+    app.use('/api', createChannelRouter(channelService, channelAuthenticate));
   }
 
   app.use((request, _response, next) => {
