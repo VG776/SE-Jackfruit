@@ -250,7 +250,7 @@ flowchart TB
 - **Moderation & Audit Service:** Executes administrative overrides (message removal, member kicks/bans) and atomically logs every security-relevant action into the immutable `audit_logs` table.
 
 #### 5. Real-Time Gateway & Connection Manager
-- **WebSocket Gateway Engine:** Listens on the same HTTP server port via upgrade headers; verifies JWT tokens on connection establishment.
+- **WebSocket Gateway Engine:** `backend/src/realtime/webSocketGateway.js` listens on the HTTP server port at `/api/ws`; verifies the token during upgrade and before each event, then checks current channel membership before changing a socket's channel subscription state.
 - **Channel Room Registry:** Maintains in-memory set mappings of active socket connections partitioned by `channelId` and `conversationId`.
 - **Presence Tracker:** Ingests client heartbeats every 30 seconds; automatically sets user presence to `offline` if heartbeats lapse for $ge 60$ seconds, broadcasting presence state transitions to mutual community members.
 
@@ -270,10 +270,10 @@ Every functional, non-functional, and security requirement defined in the *Nexus
 | **FR-AUTH-02** | User Login & Authentication | `AuthService`, `JWTAuth`, `RateLimiter` | Constant-time bcrypt credential check; issuance of signed JWT access token; generic 401 error message preventing account enumeration. |
 | **FR-AUTH-03** | User Logout & Session Invalidation | `AuthService`, `JWTAuth`, `TokenRevocationStore` | Token revocation via JTI blacklist / clearing of HttpOnly refresh token; client state reset. |
 | **FR-AUTH-04** | Profile View & Update | `AuthService`, `InputValidator`, `Repositories` | Input validation schema on display name and bio; SQL parameterized update; returns sanitized user DTO. |
-| **FR-COM-01** | Community Creation & Name Validation | `CommunityService`, `InputValidator`, `PostgreSQL` | Unique composite constraint `UNIQUE(owner_id, name)`; slug validation; creator automatically assigned `admin` role in `community_members`. |
+| **FR-COM-01** | Community Creation & Name Validation | `CommunityService`, `InputValidator`, `PostgreSQL` | Unique composite constraint `UNIQUE(owner_id, name)`; owner identity is the source of the owner's administrative permissions. |
 | **FR-COM-02** | Community Invitations & Membership | `CommunityService`, `RBACGuard`, `Repositories` | Cryptographically random invite token generator; server-side permission check requiring `MANAGE_MEMBERS` role. |
 | **FR-COM-03** | Text Channel Management (CRUD) | `CommunityService`, `RBACGuard`, `PostgreSQL` | Admin permission enforcement (`MANAGE_CHANNELS`); foreign key cascade deletion for channel resources; name normalization (`kebab-case`). |
-| **FR-COM-04** | Server-Side Permission Verification | `RBACGuard` Middleware, `Repositories` | Mandatory server-side authorization check before controller execution; queries `community_members` role for target resource; rejects with 403 Forbidden. |
+| **FR-COM-04** | Server-Side Permission Verification | `ChannelService`, `ChannelPermissionRepository`, `WebSocketGateway` | Each implemented protected REST operation authenticates and checks current database membership/role before mutation. Channel access checks include community ownership or membership; non-members receive the same 404 for existing and missing channel IDs. WebSocket connections authenticate at handshake and revalidate authentication plus channel access for each join/leave event. |
 | **FR-MSG-01** | Channel Message Validation & Sending | `InputValidator`, `MessagingService`, `WSGateway` | Payload schema validation (non-empty, max 2000 chars); channel access authorization check; sanitization of UTF-8 characters. |
 | **FR-MSG-02** | Message Persistence & WebSocket Delivery | `MessagingService`, `WSGateway`, `RoomRegistry`, `PostgreSQL` | Atomic write to `messages` table followed immediately by in-memory WebSocket event broadcast to room subscribers; paginated historical fetch endpoint (`GET /api/channels/:id/messages`). |
 | **FR-MSG-03** | One-to-One Direct Messaging (DM) | `MessagingService`, `WSGateway`, `RoomRegistry` | `direct_conversations` and `direct_messages` tables; strict participant membership check; events emitted only to sockets registered to the specific conversation. |
@@ -334,8 +334,8 @@ sequenceDiagram
     end
 
     Note over User, WS: WebSocket Handshake Flow
-    User->>WS: Connect WSS /ws?token=<JWT>
-    WS->>WS: Verify JWT signature & expiration
+    User->>WS: Connect WSS /api/ws with Bearer header or nexuschat.v1 + bearer.<JWT> subprotocols
+    WS->>AuthSvc: Authenticate token against signature, expiry, revocation and current user
     alt Token Valid
         WS->>WS: Register socket with userId
         WS-->>User: Connection Established (ACK)

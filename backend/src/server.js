@@ -7,6 +7,7 @@ const { ChannelPermissionRepository } = require('./repositories/channelPermissio
 const { AuthService } = require('./services/authService');
 const { ChannelService } = require('./services/channelService');
 const { createApp } = require('./app');
+const { createWebSocketGateway } = require('./realtime/webSocketGateway');
 
 const port = Number(process.env.API_PORT || 5000);
 const pool = createDatabasePool();
@@ -21,8 +22,10 @@ const app = createApp({ authService, communityService, channelService });
 const server = app.listen(port, () => {
   console.log(`NexusChat API listening on port ${port}.`);
 });
+const webSocketServer = createWebSocketGateway(server, { authService, channelService });
 
 async function shutDown() {
+  webSocketServer.close();
   server.close(async () => {
     await pool.end();
   });

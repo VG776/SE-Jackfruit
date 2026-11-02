@@ -4,7 +4,7 @@ function createCommunityController(communityService) {
       try {
         const community = await communityService.create({
           ...request.validatedBody,
-          ownerId: request.user.id,
+          ownerId: request.authenticatedUserId,
         });
 
         response.status(201).json({ status: 'success', data: community });

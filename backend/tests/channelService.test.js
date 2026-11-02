@@ -8,7 +8,7 @@ describe('ChannelService', () => {
       rename: jest.fn().mockResolvedValue(null),
     };
     const service = new ChannelService(repository, {
-      canManageChannels: jest.fn().mockResolvedValue(true),
+      roleInCommunity: jest.fn().mockResolvedValue('admin'),
     });
     await expect(service.rename('user-id', 'channel-id', { name: 'Updates' }))
       .rejects.toMatchObject({ status: 404, code: 'CHANNEL_NOT_FOUND' });
@@ -27,7 +27,7 @@ describe('ChannelService', () => {
       create: jest.fn(),
     };
     const permissionRepository = {
-      canManageChannels: jest.fn().mockResolvedValue(false),
+      roleInCommunity: jest.fn().mockResolvedValue('member'),
     };
     const service = new ChannelService(channelRepository, permissionRepository);
 
@@ -55,7 +55,7 @@ describe('ChannelService', () => {
       })),
     };
     const permissionRepository = {
-      canManageChannels: jest.fn().mockResolvedValue(true),
+      roleInCommunity: jest.fn().mockResolvedValue('admin'),
     };
     const service = new ChannelService(channelRepository, permissionRepository);
 

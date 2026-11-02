@@ -299,14 +299,50 @@ describe('US-06 channel management API', () => {
         VALUES ('88888888-8888-4888-8888-888888888888', '99999999-9999-4999-8999-999999999999', $1, 'admin')`, [MEMBER_ID]);
     }
     const created = await createChannel(app);
+    const expectedStatus = role === 'moderator' ? 403 : 404;
     await request(app).post(`/api/communities/${COMMUNITY_ID}/channels`)
-      .set('x-test-user-id', MEMBER_ID).send({ name: 'Forbidden', type: 'text' }).expect(403);
+      .set('x-test-user-id', MEMBER_ID).send({ name: 'Forbidden', type: 'text' }).expect(expectedStatus);
     await request(app).patch(`/api/channels/${created.body.data.id}`)
-      .set('x-test-user-id', MEMBER_ID).send({ name: 'Forbidden' }).expect(403);
+      .set('x-test-user-id', MEMBER_ID).send({ name: 'Forbidden' }).expect(expectedStatus);
     await request(app).delete(`/api/channels/${created.body.data.id}?confirm=true`)
-      .set('x-test-user-id', MEMBER_ID).expect(403);
+      .set('x-test-user-id', MEMBER_ID).expect(expectedStatus);
     const stored = await pool.query('SELECT name FROM channels');
     expect(stored.rows).toEqual([{ name: 'general-chat' }]);
+  });
+
+  test('does not reveal another community channel to a non-member', async () => {
+    const created = await createChannel(app);
+    const channelId = created.body.data.id;
+    const forbidden = await request(app).patch(`/api/channels/${channelId}`)
+      .set('x-test-user-id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')
+      .send({ name: 'stolen-channel' });
+    const missing = await request(app).patch('/api/channels/44444444-4444-4444-8444-444444444444')
+      .set('x-test-user-id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')
+      .send({ name: 'stolen-channel' });
+
+    expect(forbidden.status).toBe(404);
+    expect(forbidden.body).toEqual(expect.objectContaining({
+      code: missing.body.code,
+      detail: missing.body.detail,
+      status: missing.body.status,
+    }));
+    const stored = await pool.query('SELECT name FROM channels WHERE id = $1', [channelId]);
+    expect(stored.rows).toEqual([{ name: 'general-chat' }]);
+  });
+
+  test('does not reveal another community when creating a channel by identifier', async () => {
+    const outsiderId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const inaccessible = await request(app).post(`/api/communities/${COMMUNITY_ID}/channels`)
+      .set('x-test-user-id', outsiderId).send({ name: 'forbidden', type: 'text' });
+    const missing = await request(app).post('/api/communities/44444444-4444-4444-8444-444444444444/channels')
+      .set('x-test-user-id', outsiderId).send({ name: 'forbidden', type: 'text' });
+
+    expect(inaccessible.status).toBe(404);
+    expect(inaccessible.body).toEqual(expect.objectContaining({
+      code: missing.body.code,
+      detail: missing.body.detail,
+      status: missing.body.status,
+    }));
   });
 
   test('reflects deletion in a subsequent rename request', async () => {
