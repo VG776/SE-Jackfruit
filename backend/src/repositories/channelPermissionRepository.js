@@ -3,20 +3,20 @@ class ChannelPermissionRepository {
     this.pool = pool;
   }
 
-  async canManageChannels(userId, communityId) {
+  async roleInCommunity(userId, communityId) {
     const result = await this.pool.query(
-      `SELECT 1
+      `SELECT CASE WHEN c.owner_id = $2 THEN 'admin' ELSE cm.role END AS role
          FROM communities c
          LEFT JOIN community_members cm
            ON cm.community_id = c.id
           AND cm.user_id = $2
         WHERE c.id = $1
-          AND (c.owner_id = $2 OR cm.role = 'admin')
+          AND (c.owner_id = $2 OR cm.user_id IS NOT NULL)
         LIMIT 1`,
       [communityId, userId],
     );
 
-    return result.rowCount > 0;
+    return result.rows[0]?.role || null;
   }
 }
 

@@ -22,6 +22,22 @@ function channelNotFoundError() {
   });
 }
 
+function communityNotFoundError() {
+  return new AppError({
+    status: 404,
+    code: 'RESOURCE_NOT_FOUND',
+    detail: 'The requested resource could not be found.',
+  });
+}
+
+function insufficientPermissionsError() {
+  return new AppError({
+    status: 403,
+    code: 'INSUFFICIENT_PERMISSIONS',
+    detail: 'You do not have permission to perform this operation.',
+  });
+}
+
 function toChannelDto(channel) {
   return {
     id: channel.id,
@@ -41,16 +57,19 @@ class ChannelService {
     this.permissionRepository = permissionRepository;
   }
 
-  async assertCanManageChannels(userId, communityId) {
-    const permitted = await this.permissionRepository.canManageChannels(userId, communityId);
+  async assertCanManageChannels(userId, communityId, notFoundError = communityNotFoundError) {
+    const role = await this.permissionRepository.roleInCommunity(userId, communityId);
+    if (!role) throw notFoundError();
+    if (role !== 'admin') throw insufficientPermissionsError();
+  }
 
-    if (!permitted) {
-      throw new AppError({
-        status: 403,
-        code: 'INSUFFICIENT_PERMISSIONS',
-        detail: 'You do not have permission to manage channels in this community.',
-      });
-    }
+  async assertCanAccessChannel(userId, channelId) {
+    const channel = await this.channelRepository.findById(channelId);
+    if (!channel) throw channelNotFoundError();
+
+    const role = await this.permissionRepository.roleInCommunity(userId, channel.community_id);
+    if (!role) throw channelNotFoundError();
+    return channel;
   }
 
   async create(userId, communityId, channelData) {
@@ -85,7 +104,7 @@ class ChannelService {
       throw channelNotFoundError();
     }
 
-    await this.assertCanManageChannels(userId, existingChannel.community_id);
+    await this.assertCanManageChannels(userId, existingChannel.community_id, channelNotFoundError);
     const name = normalizeChannelName(channelData.name);
     const conflict = await this.channelRepository.findNameConflict(
       existingChannel.community_id,
@@ -118,7 +137,7 @@ class ChannelService {
       throw channelNotFoundError();
     }
 
-    await this.assertCanManageChannels(userId, channel.community_id);
+    await this.assertCanManageChannels(userId, channel.community_id, channelNotFoundError);
     await this.channelRepository.delete(channelId);
   }
 }

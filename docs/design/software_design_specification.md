@@ -500,10 +500,12 @@ interface IModerationService {
 The channel-management routes use the US-02 Bearer-token authentication middleware to populate
 `request.user.id` (or the JWT `sub` claim) before the route executes. The channel module
 then applies a server-side permission check before every create, rename, or delete operation.
-The permission adapter grants `MANAGE_CHANNELS` to the community owner and members whose
-community role is `admin`; it fails closed for moderators, ordinary members, and users with
-no membership. The check is performed against server-side database state before every
-channel mutation.
+The permission repository resolves the caller's role from current database state. It grants
+`MANAGE_CHANNELS` to the community owner and members whose role is `admin`; it fails closed for
+moderators, ordinary members, and users with no membership. Owners are treated as admins even
+when they do not have a separate membership row. A caller who is not a member receives the same
+generic 404 for an existing channel and a missing channel; a member without the required admin
+role receives 403. The check runs before each channel mutation.
 
 Channel names are trimmed and normalized to lowercase kebab-case, remain unique within a
 community, and are limited to the approved 100-character field size. Deletion requires the
@@ -520,6 +522,15 @@ Run `npm run migrate` from `backend` before starting the API. Migration
 and the community membership roles required by channel authorization. No membership-management
 endpoints are introduced. Automated API tests cover the real register/login/community/channel/logout
 flow as well as owner/admin success and member/moderator/non-member/cross-community denial.
+
+The WebSocket gateway accepts connections only at `/api/ws`. It accepts a Bearer Authorization
+header or the `nexuschat.v1` and `bearer.<JWT>` subprotocol pair; credentials are never read from
+the URL. It authenticates during the upgrade and revalidates the token before every event, so
+revocation and account removal apply to existing sockets. `JOIN_CHANNEL` and `LEAVE_CHANNEL`
+require a valid channel UUID and current owner or membership access before the room subscription
+state changes. Unauthorized and missing channel events receive the same generic 404. Message,
+membership, and moderation event handlers and REST endpoints are not present yet; any future
+protected handlers must call these same policy services before reading or changing resources.
 
 ---
 
