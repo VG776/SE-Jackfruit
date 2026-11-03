@@ -532,6 +532,8 @@ state changes. Unauthorized and missing channel events receive the same generic 
 membership, and moderation event handlers and REST endpoints are not present yet; any future
 protected handlers must call these same policy services before reading or changing resources.
 
+Channel message transmission is supported both via REST POST /api/channels/:channelId/messages and WebSocket SEND_MESSAGE events (FR-MSG-01, FR-COM-04). Payloads undergo declarative length and non-empty validation (1..2000 chars) and server-side channel authorization checking before persisting to the messages table. Unauthorized channel access returns 404 to avoid channel enumeration. Valid messages are persisted with their author (sender_id) and channel_id, returning a 201 Created REST response or WebSocket ACK containing message metadata.
+
 ---
 
 ## 6. Design Decisions, Performance Considerations & Open Issues

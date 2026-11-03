@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS messages (
+  id UUID PRIMARY KEY,
+  channel_id UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content VARCHAR(2000) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_channel_id_created_at
+  ON messages (channel_id, created_at);
