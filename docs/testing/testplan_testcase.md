@@ -362,3 +362,14 @@ Traceability ensures that the important SRS requirements have corresponding test
 
 **Traceability note:** The NFR labels in this table are grouping labels, not substitutes for requirement IDs in the SRS. If the approved SRS or RTM uses different NFR identifiers, update this table to match those identifiers exactly. Every requirement should be reviewed for coverage, and any requirement without a test case should be identified before final submission.
 
+## US-09 message history and performance checks
+
+| Test Case ID | Objective | Execution | Expected result | Automated coverage |
+|---|---|---|---|---|
+| TC-F27 | Confirm a saved message reaches authorized, currently subscribed channel members. | Join two authorized WebSocket clients to one channel, send a valid message, and inspect the event and database row. | `MESSAGE_CREATED` contains the persisted DTO; the sender receives the existing `ACK` with status `DELIVERED` only after persistence. | `webSocketGateway.integration.test.js` |
+| TC-F28 | Prevent disclosure to clients whose membership was revoked after joining. | Join an authorized client, remove its membership, then send a message from another authorized client. | The revoked client receives no message and its stale subscription is removed. | `webSocketGateway.integration.test.js` |
+| TC-F29 | Restore history after reconnect with stable pagination. | Send at least two messages, fetch history with `limit=1`, then follow `nextCursor`. | Each persisted message is returned once in chronological order; guests and non-members receive no history. | `message.integration.test.js` |
+| TC-NF10 | Measure WebSocket acknowledgement latency against SRS §6.1. | Run `npm run benchmark:messaging` with `WS_URL`, `WS_TOKEN`, `CHANNEL_ID`, `CLIENTS`, and `MESSAGES_PER_CLIENT` set against the agreed test deployment. Record deployment, database, client count, message count, and JSON output. | Report p50/p95 and whether p95 meets 500 ms. Repeat with the same conditions for comparable results. | `backend/scripts/benchmark-messaging.js` |
+
+**US-09 performance execution record:** Not run in this change environment. No measured latency result is claimed. The benchmark procedure is ready; execute it against the intended authenticated test deployment and record its output before evaluating SRS §6.1.
+

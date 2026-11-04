@@ -66,6 +66,45 @@ class MessageService {
     }
     return dto;
   }
+
+  async getChannelHistory(userId, channelId, { limit = 50, cursor } = {}) {
+    await this.channelService.assertCanAccessChannel(userId, channelId);
+
+    let before = null;
+    if (cursor) {
+      try {
+        before = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+      } catch (_error) {
+        throw messageValidationError('The history cursor is invalid', [
+          { name: 'cursor', reason: 'Expected a cursor returned by the message history endpoint' },
+        ]);
+      }
+      if (
+        !before ||
+        typeof before.createdAt !== 'string' ||
+        Number.isNaN(Date.parse(before.createdAt)) ||
+        typeof before.id !== 'string' ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(before.id)
+      ) {
+        throw messageValidationError('The history cursor is invalid', [
+          { name: 'cursor', reason: 'Expected a cursor returned by the message history endpoint' },
+        ]);
+      }
+    }
+
+    const rows = await this.messageRepository.findByChannelId(channelId, {
+      limit: limit + 1,
+      before,
+    });
+    const hasMore = rows.length > limit;
+    const page = rows.slice(0, limit).reverse().map(toMessageDto);
+    const lastMessage = page[0];
+    const nextCursor = hasMore && lastMessage
+      ? Buffer.from(JSON.stringify({ createdAt: lastMessage.createdAt, id: lastMessage.id })).toString('base64url')
+      : null;
+
+    return { messages: page, hasMore, nextCursor };
+  }
 }
 
 module.exports = { MessageService, toMessageDto };
