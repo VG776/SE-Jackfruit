@@ -16,7 +16,7 @@ const MEMBER_ID = '22222222-2222-4222-8222-222222222222';
 const COMMUNITY_ID = '33333333-3333-4333-8333-333333333333';
 const CHANNEL_ID = '44444444-4444-4444-8444-444444444444';
 
-describe('US-07 and US-08 WebSocket permission enforcement & message sending', () => {
+describe('US-07, US-08 and US-09 WebSocket permission enforcement & message delivery', () => {
   let pool;
   let server;
   let gateway;
@@ -90,10 +90,22 @@ describe('US-07 and US-08 WebSocket permission enforcement & message sending', (
     return new WebSocket(baseUrl, [PROTOCOL, `bearer.${token}`]);
   }
 
-  function nextMessage(socket) {
+  function nextMessage(socket, predicate = () => true) {
     return new Promise((resolve, reject) => {
-      socket.once('message', (message) => resolve(JSON.parse(message.toString())));
-      socket.once('error', reject);
+      const onMessage = (message) => {
+        const parsed = JSON.parse(message.toString());
+        if (predicate(parsed)) {
+          socket.off('message', onMessage);
+          socket.off('error', onError);
+          resolve(parsed);
+        }
+      };
+      const onError = (error) => {
+        socket.off('message', onMessage);
+        reject(error);
+      };
+      socket.on('message', onMessage);
+      socket.once('error', onError);
     });
   }
 
@@ -197,7 +209,7 @@ describe('US-07 and US-08 WebSocket permission enforcement & message sending', (
     expect(socket.readyState).toBe(WebSocket.CLOSED);
   });
 
-  describe('US-08 WebSocket SEND_MESSAGE event', () => {
+  describe('US-09 WebSocket SEND_MESSAGE event', () => {
     test('allows member to send message via SEND_MESSAGE event and receives ACK', async () => {
       const socket = connect('member-token');
       await new Promise((resolve) => socket.once('open', resolve));
@@ -227,6 +239,67 @@ describe('US-07 and US-08 WebSocket permission enforcement & message sending', (
       expect(ack.payload.messageId).toBeDefined();
       expect(ack.payload.timestamp).toBeDefined();
       socket.close();
+    });
+
+    test('persists before broadcasting to joined authorized members and acknowledging the sender', async () => {
+      const receiver = connect('owner-token');
+      const sender = connect('member-token');
+      await Promise.all([
+        new Promise((resolve) => receiver.once('open', resolve)),
+        new Promise((resolve) => sender.once('open', resolve)),
+      ]);
+
+      const receiverJoined = nextMessage(receiver);
+      receiver.send(JSON.stringify({ type: 'JOIN_CHANNEL', payload: { channelId: CHANNEL_ID } }));
+      await receiverJoined;
+      const senderJoined = nextMessage(sender);
+      sender.send(JSON.stringify({ type: 'JOIN_CHANNEL', payload: { channelId: CHANNEL_ID } }));
+      await senderJoined;
+
+      const receiverEvent = nextMessage(receiver, (message) => message.type === 'MESSAGE_CREATED');
+      const senderEvent = nextMessage(sender, (message) => message.type === 'MESSAGE_CREATED');
+      const senderAck = nextMessage(sender, (message) => message.type === 'ACK');
+      sender.send(JSON.stringify({
+        type: 'SEND_MESSAGE',
+        payload: { channelId: CHANNEL_ID, content: 'Persisted before delivery', clientNonce: 'durable-1' },
+      }));
+
+      const [event, ownEvent, ack] = await Promise.all([receiverEvent, senderEvent, senderAck]);
+      expect(event).toMatchObject({
+        type: 'MESSAGE_CREATED',
+        payload: { channelId: CHANNEL_ID, senderId: MEMBER_ID, content: 'Persisted before delivery' },
+      });
+      expect(ownEvent).toEqual(event);
+      expect(ack).toMatchObject({ type: 'ACK', event: 'SEND_MESSAGE', payload: { status: 'DELIVERED' } });
+      expect(await pool.query('SELECT id FROM messages WHERE id = $1', [ack.payload.messageId]))
+        .toMatchObject({ rows: [{ id: ack.payload.messageId }] });
+      receiver.close();
+      sender.close();
+    });
+
+    test('removes a revoked member subscription before broadcasting protected content', async () => {
+      const receiver = connect('member-token');
+      const sender = connect('owner-token');
+      await Promise.all([
+        new Promise((resolve) => receiver.once('open', resolve)),
+        new Promise((resolve) => sender.once('open', resolve)),
+      ]);
+      const joined = nextMessage(receiver);
+      receiver.send(JSON.stringify({ type: 'JOIN_CHANNEL', payload: { channelId: CHANNEL_ID } }));
+      await joined;
+      await pool.query('DELETE FROM community_members WHERE user_id = $1', [MEMBER_ID]);
+
+      const ack = nextMessage(sender);
+      sender.send(JSON.stringify({
+        type: 'SEND_MESSAGE',
+        payload: { channelId: CHANNEL_ID, content: 'Private after revocation' },
+      }));
+      await ack;
+
+      const receiverSocket = [...gateway.clients].find((client) => client.userId === MEMBER_ID);
+      expect(receiverSocket.channels.has(CHANNEL_ID)).toBe(false);
+      receiver.close();
+      sender.close();
     });
 
     test('rejects empty message via WebSocket with INVALID_INPUT_PAYLOAD', async () => {

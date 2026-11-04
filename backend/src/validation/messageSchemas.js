@@ -15,7 +15,13 @@ const sendMessageSchema = z
   })
   .strict('Unexpected fields are not allowed');
 
+const messageHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  cursor: z.string().min(1).max(256).optional(),
+}).strict('Unexpected query parameters are not allowed');
+
 module.exports = {
   channelParamsSchema,
   sendMessageSchema,
+  messageHistoryQuerySchema,
 };

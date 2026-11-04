@@ -230,4 +230,65 @@ describe('US-08 Message sending API integration (FR-MSG-01, FR-COM-04)', () => {
       });
     });
   });
+
+  describe('Message history and reconnection (FR-MSG-02)', () => {
+    test('returns an authenticated channel history page and a cursor for older messages', async () => {
+      const first = await context.messageService.sendMessage(MEMBER_ID, CHANNEL_ID, {
+        content: 'Older message',
+      });
+      const second = await context.messageService.sendMessage(MEMBER_ID, CHANNEL_ID, {
+        content: 'Newer message',
+      });
+      await context.pool.query('UPDATE messages SET created_at = $2 WHERE id = $1', [
+        first.id,
+        '2026-11-03T10:00:00Z',
+      ]);
+      await context.pool.query('UPDATE messages SET created_at = $2 WHERE id = $1', [
+        second.id,
+        '2026-11-03T10:00:01Z',
+      ]);
+
+      const firstPage = await request(context.app)
+        .get(`/api/channels/${CHANNEL_ID}/messages?limit=1`)
+        .set('x-test-user-id', MEMBER_ID);
+
+      expect(firstPage.status).toBe(200);
+      expect(firstPage.body.data.messages).toHaveLength(1);
+      expect(firstPage.body.data.messages[0].id).toBe(second.id);
+      expect(firstPage.body.data.hasMore).toBe(true);
+      expect(firstPage.body.data.nextCursor).toBeTruthy();
+
+      const nextPage = await request(context.app)
+        .get(`/api/channels/${CHANNEL_ID}/messages?limit=1&cursor=${encodeURIComponent(firstPage.body.data.nextCursor)}`)
+        .set('x-test-user-id', MEMBER_ID);
+
+      expect(nextPage.status).toBe(200);
+      expect(nextPage.body.data.messages.map((message) => message.id)).toEqual([first.id]);
+      expect(nextPage.body.data.hasMore).toBe(false);
+      expect(nextPage.body.data.nextCursor).toBeNull();
+    });
+
+    test('requires authentication and hides history from non-members', async () => {
+      const anonymous = await request(context.app).get(`/api/channels/${CHANNEL_ID}/messages`);
+      const nonMember = await request(context.app)
+        .get(`/api/channels/${CHANNEL_ID}/messages`)
+        .set('x-test-user-id', NON_MEMBER_ID);
+
+      expect(anonymous.status).toBe(401);
+      expect(nonMember.status).toBe(404);
+      expect(nonMember.body.code).toBe('CHANNEL_NOT_FOUND');
+    });
+
+    test('rejects malformed history cursors and out-of-range limits', async () => {
+      const invalidCursor = await request(context.app)
+        .get(`/api/channels/${CHANNEL_ID}/messages?cursor=not-a-cursor`)
+        .set('x-test-user-id', MEMBER_ID);
+      const invalidLimit = await request(context.app)
+        .get(`/api/channels/${CHANNEL_ID}/messages?limit=101`)
+        .set('x-test-user-id', MEMBER_ID);
+
+      expect(invalidCursor.status).toBe(400);
+      expect(invalidLimit.status).toBe(400);
+    });
+  });
 });

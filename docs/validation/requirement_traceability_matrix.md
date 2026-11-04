@@ -41,3 +41,17 @@ This incremental RTM records the implementation and verification added for US-08
 - Non-members receive a generic 404 identical to non-existent channels, preventing channel enumeration.
 - Saved messages atomically persist id, channel_id, sender_id, content, created_at, and updated_at.
 - Both REST and WebSocket SEND_MESSAGE routes return structured responses / acks containing message ID, channel ID, timestamp, and optional clientNonce.
+
+# Requirement Traceability Matrix Update — US-09
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| FR-MSG-02 | Persist channel messages, deliver them in real time only to authorized subscribers, and restore prior messages after reconnect. | `MessageService`, `MessageRepository`, `GET /api/channels/:channelId/messages`, WebSocket `MESSAGE_CREATED`, and migration `005_index_message_history.sql`. | `messageService.test.js`, `message.integration.test.js`, and `webSocketGateway.integration.test.js`; performance procedure in `backend/scripts/benchmark-messaging.js`. | Implemented for channel messages. The existing `DELIVERED` acknowledgement follows the database write and subscriber fan-out attempt; reconnect retrieves persisted history through cursor pagination. Performance benchmark requires an authenticated test deployment and is marked not run until executed. |
+| FR-COM-04 | Enforce server-side permissions for channel history and live delivery. | `MessageService.getChannelHistory` and delivery-time membership checks in `webSocketGateway.js`. | History API tests for guests/non-members; WebSocket tests for unauthorized joins and revoked subscriptions. | Non-members receive the same generic 404 as a missing channel; stale subscriptions are dropped before fan-out. |
+| SRS §6.1 | Keep WebSocket message acknowledgement p95 at or below 500 ms under the documented load. | `npm run benchmark:messaging` using the configured URL, authorized test token, channel, and concurrency. | Benchmark output records client count, message count, elapsed time, p50/p95, and target comparison. | Measurement not run in this change environment; no result is claimed. |
+
+## US-09 verification boundary
+
+- A successful WebSocket `ACK` means the message was persisted and the server completed its authorized subscriber fan-out attempt; it is not a per-client read receipt.
+- Reconnecting clients must request channel history with the last returned `nextCursor` until `hasMore` is false.
+- The performance command must be run against the intended deployment with the test environment details recorded alongside its JSON output.

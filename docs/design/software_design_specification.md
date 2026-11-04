@@ -235,7 +235,7 @@ sequenceDiagram
 | **POST** | `/api/communities/:id/channels` | Create text channel | JSON: `{ name, type: "text" }` | `201 Created`, `400`, `403` | Yes (Admin) | `FR-COM-03` |
 | **PATCH** | `/api/channels/:id` | Rename channel | JSON: `{ name }` | `200 OK`, `400`, `403` | Yes (Admin) | `FR-COM-03` |
 | **DELETE** | `/api/channels/:id` | Delete channel (destructive) | Query: `?confirm=true` | `204 No Content`, `403` | Yes (Admin) | `FR-COM-03, SRS 6.2` |
-| **GET** | `/api/channels/:id/messages` | Fetch channel message history | Query: `?before=<uuid>&limit=50` | `200 OK`, `403`, `404` | Yes (Member) | `FR-MSG-02` |
+| **GET** | `/api/channels/:channelId/messages` | Fetch channel message history | Query: `?limit=50&cursor=<opaque-cursor>`; response contains `messages`, `hasMore`, and `nextCursor` | `200 OK`, `400`, `401`, `404` | Yes (Member) | `FR-MSG-02` |
 | **POST** | `/api/channels/:id/messages` | Send message (REST fallback) | JSON: `{ content, clientNonce }` | `201 Created`, `400`, `403` | Yes (Member) | `FR-MSG-01` |
 | **PATCH** | `/api/messages/:id` | Edit message content | JSON: `{ content }` | `200 OK`, `403`, `404` | Yes (Author) | `FR-MSG-04` |
 | **DELETE** | `/api/messages/:id` | Delete / tombstone message | None | `204 No Content`, `403` | Yes (Author/Mod)| `FR-MSG-04, FR-MOD-01` |
@@ -392,12 +392,12 @@ interface WebSocketEnvelope<T> {
 2. **`SEND_MESSAGE` (Client -> Server):**
    - Payload: `{ "channelId": "uuid", "content": "text", "clientNonce": "nonce-123" }`
    - Purpose: Dispatches message for persistence and fan-out.
-3. **`ACK` (Server -> Client):**
-   - Payload: `{ "clientNonce": "nonce-123", "messageId": "uuid", "status": "DELIVERED" }`
+3. **`ACK` (Server -> Sender):**
+   - Payload: `{ "clientNonce": "nonce-123", "messageId": "uuid", "channelId": "uuid", "status": "DELIVERED", "timestamp": "timestamp" }`
    - Purpose: Sent within $\le 500	ext{ ms}$ p95 to verify message receipt and database commit.
-4. **`MESSAGE_RECEIVED` (Server -> Client):**
-   - Payload: `{ "id": "uuid", "channelId": "uuid", "sender": { "id": "uuid", "username": "alice" }, "content": "Hello", "createdAt": "timestamp" }`
-   - Purpose: Broadcasts new message to room subscribers.
+4. **`MESSAGE_CREATED` (Server -> Authorized channel subscribers):**
+   - Payload: Persisted message DTO `{ "id": "uuid", "channelId": "uuid", "senderId": "uuid", "content": "Hello", "createdAt": "timestamp", "updatedAt": "timestamp" }`.
+   - Purpose: Broadcasts a saved message to joined clients whose channel access is still valid.
 5. **`TYPING_START` / `TYPING_STOP` (Client <-> Server):**
    - Payload: `{ "channelId": "uuid", "userId": "uuid", "username": "alice" }`
    - Purpose: Ephemeral typing presence indication; auto-cleared after 3 seconds.
@@ -532,7 +532,7 @@ state changes. Unauthorized and missing channel events receive the same generic 
 membership, and moderation event handlers and REST endpoints are not present yet; any future
 protected handlers must call these same policy services before reading or changing resources.
 
-Channel message transmission is supported both via REST POST /api/channels/:channelId/messages and WebSocket SEND_MESSAGE events (FR-MSG-01, FR-COM-04). Payloads undergo declarative length and non-empty validation (1..2000 chars) and server-side channel authorization checking before persisting to the messages table. Unauthorized channel access returns 404 to avoid channel enumeration. Valid messages are persisted with their author (sender_id) and channel_id, returning a 201 Created REST response or WebSocket ACK containing message metadata.
+Channel message transmission is supported through REST POST /api/channels/:channelId/messages and WebSocket SEND_MESSAGE events (FR-MSG-01, FR-MSG-02, FR-COM-04). Payloads undergo declarative length and non-empty validation (1..2000 chars) and server-side channel authorization before persistence. The WebSocket gateway revalidates each joined subscriber before sending MESSAGE_CREATED; stale subscriptions are removed. The sender receives the existing ACK contract with status DELIVERED only after persistence and the authorized fan-out attempt. Authenticated reconnects retrieve history from GET /api/channels/:channelId/messages using an opaque cursor and a limit from 1 to 100. Unauthorized channel access returns 404 to avoid channel enumeration.
 
 ---
 

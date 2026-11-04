@@ -2,7 +2,11 @@ const express = require('express');
 const { createMessageController } = require('../controllers/messageController');
 const { requireAuthenticatedUser } = require('../middleware/requireAuthenticatedUser');
 const { validate } = require('../middleware/validate');
-const { channelParamsSchema, sendMessageSchema } = require('../validation/messageSchemas');
+const {
+  channelParamsSchema,
+  messageHistoryQuerySchema,
+  sendMessageSchema,
+} = require('../validation/messageSchemas');
 
 function createMessageRouter(messageService, authenticate) {
   const router = express.Router();
@@ -19,6 +23,15 @@ function createMessageRouter(messageService, authenticate) {
     validateChannelParams,
     validate(sendMessageSchema),
     controller.sendMessage,
+  );
+
+  router.get(
+    '/channels/:channelId/messages',
+    authenticate,
+    requireAuthenticatedUser,
+    validateChannelParams,
+    validate(messageHistoryQuerySchema, { source: 'query', target: 'validatedQuery' }),
+    controller.getHistory,
   );
 
   return router;
