@@ -3,6 +3,10 @@ const { WebSocketServer } = require('ws');
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PROTOCOL = 'nexuschat.v1';
 
+// In-memory presence state: userId -> { status, updatedAt }
+const presenceMap = new Map();
+const VALID_PRESENCE = new Set(['online', 'idle', 'offline']);
+
 function tokenFromRequest(request) {
   const authorization = request.headers.authorization;
   if (authorization) {
@@ -19,6 +23,22 @@ function tokenFromRequest(request) {
 function sendError(socket, code, detail) {
   if (socket.readyState === socket.OPEN) {
     socket.send(JSON.stringify({ type: 'ERROR', code, detail }));
+  }
+}
+
+function broadcastToAll(webSocketServer, message) {
+  const payload = JSON.stringify(message);
+  for (const client of webSocketServer.clients) {
+    if (client.readyState === client.OPEN) client.send(payload);
+  }
+}
+
+function broadcastToChannelMembers(webSocketServer, channelId, message, excludeSocket = null) {
+  const payload = JSON.stringify(message);
+  for (const client of webSocketServer.clients) {
+    if (client !== excludeSocket && client.readyState === client.OPEN && client.channels?.has(channelId)) {
+      client.send(payload);
+    }
   }
 }
 
@@ -60,6 +80,21 @@ function createWebSocketGateway(server, { authService, channelService, messageSe
   });
 
   webSocketServer.on('connection', (socket) => {
+    // Set presence to online on connect and broadcast to all
+    presenceMap.set(socket.userId, { status: 'online', updatedAt: new Date().toISOString() });
+    broadcastToAll(webSocketServer, {
+      type: 'PRESENCE_UPDATE',
+      payload: { userId: socket.userId, status: 'online', updatedAt: presenceMap.get(socket.userId).updatedAt },
+    });
+
+    socket.on('close', () => {
+      presenceMap.set(socket.userId, { status: 'offline', updatedAt: new Date().toISOString() });
+      broadcastToAll(webSocketServer, {
+        type: 'PRESENCE_UPDATE',
+        payload: { userId: socket.userId, status: 'offline', updatedAt: presenceMap.get(socket.userId).updatedAt },
+      });
+    });
+
     socket.on('message', async (rawMessage) => {
       try {
         // Revalidate the token for every event so logout, expiry, and account removal
@@ -80,11 +115,33 @@ function createWebSocketGateway(server, { authService, channelService, messageSe
           return;
         }
 
-        if (!event || !['JOIN_CHANNEL', 'LEAVE_CHANNEL', 'SEND_MESSAGE'].includes(event.type)) {
+        if (
+          !event ||
+          !['JOIN_CHANNEL', 'LEAVE_CHANNEL', 'SEND_MESSAGE', 'SET_PRESENCE', 'TYPING_START', 'TYPING_STOP'].includes(
+            event.type,
+          )
+        ) {
           sendError(socket, 'UNSUPPORTED_EVENT', 'The event type is not supported.');
           return;
         }
 
+        // Handle SET_PRESENCE first (no channelId needed)
+        if (event.type === 'SET_PRESENCE') {
+          const status = event?.payload?.status;
+          if (!VALID_PRESENCE.has(status)) {
+            sendError(socket, 'INVALID_EVENT', 'Presence status must be online, idle, or offline');
+            return;
+          }
+          const updatedAt = new Date().toISOString();
+          presenceMap.set(socket.userId, { status, updatedAt });
+          broadcastToAll(webSocketServer, {
+            type: 'PRESENCE_UPDATE',
+            payload: { userId: socket.userId, status, updatedAt },
+          });
+          return;
+        }
+
+        // All other events need channelId
         const channelId = event?.payload?.channelId;
         if (typeof channelId !== 'string' || !UUID_PATTERN.test(channelId)) {
           sendError(socket, 'INVALID_EVENT', 'A valid channelId is required.');
@@ -129,6 +186,23 @@ function createWebSocketGateway(server, { authService, channelService, messageSe
           );
           return;
         }
+
+        if (event.type === 'TYPING_START' || event.type === 'TYPING_STOP') {
+          if (!socket.channels.has(channelId)) {
+            sendError(socket, 'NOT_IN_CHANNEL', 'You must join the channel before sending typing events.');
+            return;
+          }
+          broadcastToChannelMembers(
+            webSocketServer,
+            channelId,
+            {
+              type: 'TYPING',
+              payload: { userId: socket.userId, channelId, typing: event.type === 'TYPING_START' },
+            },
+            socket,
+          );
+          return;
+        }
       } catch (error) {
         const code =
           error.status === 400
@@ -155,4 +229,4 @@ function createWebSocketGateway(server, { authService, channelService, messageSe
   return webSocketServer;
 }
 
-module.exports = { createWebSocketGateway, PROTOCOL, tokenFromRequest };
+module.exports = { createWebSocketGateway, PROTOCOL, tokenFromRequest, presenceMap };
