@@ -2,6 +2,7 @@ const express = require('express');
 const { createAuthRouter } = require('./routes/authRoutes');
 const { createChannelRouter } = require('./routes/channelRoutes');
 const { createMessageRouter } = require('./routes/messageRoutes');
+const { createDirectMessageRouter } = require('./routes/directMessageRoutes');
 const { createUserRouter } = require('./routes/userRoutes');
 const { createCommunityRouter } = require('./routes/communityRoutes');
 const { createAuthenticateMiddleware } = require('./middleware/authenticate');
@@ -13,6 +14,7 @@ function createApp({
   communityService,
   channelService,
   messageService,
+  directMessageService,
   authenticate,
   enableRateLimit = true,
 }) {
@@ -36,6 +38,10 @@ function createApp({
 
   if (messageService) {
     app.use('/api', createMessageRouter(messageService, apiAuthenticate));
+  }
+
+  if (directMessageService) {
+    app.use('/api', createDirectMessageRouter(directMessageService, apiAuthenticate));
   }
 
   app.use((request, _response, next) => {
