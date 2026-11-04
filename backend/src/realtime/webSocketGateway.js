@@ -22,7 +22,7 @@ function sendError(socket, code, detail) {
   }
 }
 
-function createWebSocketGateway(server, { authService, channelService }) {
+function createWebSocketGateway(server, { authService, channelService, messageService }) {
   const webSocketServer = new WebSocketServer({
     noServer: true,
     maxPayload: 16 * 1024,
@@ -80,30 +80,72 @@ function createWebSocketGateway(server, { authService, channelService }) {
           return;
         }
 
-        const channelId = event?.payload?.channelId;
-        if (!event || !['JOIN_CHANNEL', 'LEAVE_CHANNEL'].includes(event.type)) {
+        if (!event || !['JOIN_CHANNEL', 'LEAVE_CHANNEL', 'SEND_MESSAGE'].includes(event.type)) {
           sendError(socket, 'UNSUPPORTED_EVENT', 'The event type is not supported.');
           return;
         }
+
+        const channelId = event?.payload?.channelId;
         if (typeof channelId !== 'string' || !UUID_PATTERN.test(channelId)) {
           sendError(socket, 'INVALID_EVENT', 'A valid channelId is required.');
           return;
         }
 
-        await channelService.assertCanAccessChannel(userId, channelId);
-        if (event.type === 'JOIN_CHANNEL') socket.channels.add(channelId);
-        else socket.channels.delete(channelId);
+        if (event.type === 'JOIN_CHANNEL' || event.type === 'LEAVE_CHANNEL') {
+          await channelService.assertCanAccessChannel(userId, channelId);
+          if (event.type === 'JOIN_CHANNEL') socket.channels.add(channelId);
+          else socket.channels.delete(channelId);
 
-        socket.send(JSON.stringify({ type: 'ACK', event: event.type, channelId }));
+          socket.send(JSON.stringify({ type: 'ACK', event: event.type, channelId }));
+          return;
+        }
+
+        if (event.type === 'SEND_MESSAGE') {
+          if (!messageService) {
+            sendError(socket, 'INTERNAL_SERVER_ERROR', 'Messaging service is not available.');
+            return;
+          }
+
+          const content = event.payload?.content;
+          const clientNonce = event.payload?.clientNonce;
+
+          const savedMessage = await messageService.sendMessage(userId, channelId, {
+            content,
+            clientNonce,
+          });
+
+          socket.send(
+            JSON.stringify({
+              type: 'ACK',
+              event: 'SEND_MESSAGE',
+              payload: {
+                clientNonce: clientNonce || null,
+                messageId: savedMessage.id,
+                channelId: savedMessage.channelId,
+                status: 'DELIVERED',
+                timestamp: savedMessage.createdAt,
+              },
+            }),
+          );
+          return;
+        }
       } catch (error) {
-        const code = error.status === 401 ? 'UNAUTHORIZED' : error.status === 403
-          ? 'INSUFFICIENT_PERMISSIONS'
-          : 'RESOURCE_NOT_FOUND';
-        const detail = code === 'INSUFFICIENT_PERMISSIONS'
-          ? 'You do not have permission to access this resource.'
-          : code === 'UNAUTHORIZED'
-            ? 'Authentication is required.'
-            : 'The requested resource could not be found.';
+        const code =
+          error.status === 400
+            ? 'INVALID_INPUT_PAYLOAD'
+            : error.status === 401
+              ? 'UNAUTHORIZED'
+              : error.status === 403
+                ? 'INSUFFICIENT_PERMISSIONS'
+                : 'RESOURCE_NOT_FOUND';
+        const detail =
+          code === 'INVALID_INPUT_PAYLOAD'
+            ? error.detail || 'Message content is invalid.'
+            : code === 'INSUFFICIENT_PERMISSIONS'
+              ? 'You do not have permission to access this resource.'
+              : code === 'UNAUTHORIZED'
+                ? 'Authentication is required.'
+                : 'The requested resource could not be found.';
         sendError(socket, code, detail);
         if (code === 'UNAUTHORIZED') socket.close(1008, 'Authentication required');
       }

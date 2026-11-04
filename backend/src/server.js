@@ -4,8 +4,10 @@ const { CommunityRepository } = require('./repositories/communityRepository');
 const { CommunityService } = require('./services/communityService');
 const { ChannelRepository } = require('./repositories/channelRepository');
 const { ChannelPermissionRepository } = require('./repositories/channelPermissionRepository');
+const { MessageRepository } = require('./repositories/messageRepository');
 const { AuthService } = require('./services/authService');
 const { ChannelService } = require('./services/channelService');
+const { MessageService } = require('./services/messageService');
 const { createApp } = require('./app');
 const { createWebSocketGateway } = require('./realtime/webSocketGateway');
 
@@ -15,14 +17,16 @@ const userRepository = new UserRepository(pool);
 const communityService = new CommunityService(new CommunityRepository(pool));
 const channelRepository = new ChannelRepository(pool);
 const channelPermissionRepository = new ChannelPermissionRepository(pool);
+const messageRepository = new MessageRepository(pool);
 const authService = new AuthService(userRepository);
 const channelService = new ChannelService(channelRepository, channelPermissionRepository);
-const app = createApp({ authService, communityService, channelService });
+const messageService = new MessageService(messageRepository, channelService);
+const app = createApp({ authService, communityService, channelService, messageService });
 
 const server = app.listen(port, () => {
   console.log(`NexusChat API listening on port ${port}.`);
 });
-const webSocketServer = createWebSocketGateway(server, { authService, channelService });
+const webSocketServer = createWebSocketGateway(server, { authService, channelService, messageService });
 
 async function shutDown() {
   webSocketServer.close();
