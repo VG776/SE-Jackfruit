@@ -227,7 +227,7 @@ sequenceDiagram
 | **POST** | `/api/auth/login` | Authenticate user & issue JWT | JSON: `{ username, password }` | `200 OK`, `400`, `401` | No (Guest) | `FR-AUTH-02` |
 | **POST** | `/api/auth/logout` | Revoke active session token | Empty body | `200 OK`, `401` | Yes (Bearer) | `FR-AUTH-03` |
 | **GET** | `/api/users/me` | Fetch active user profile | None | `200 OK`, `401` | Yes (Bearer) | `FR-AUTH-04` |
-| **PUT** | `/api/users/me` | Update user profile fields | JSON: `{ displayName, avatarUrl, status }` | `200 OK`, `400`, `401` | Yes (Bearer) | `FR-AUTH-04` |
+| **PUT** | `/api/users/me` | Update the authenticated user's profile | JSON: `{ displayName?, avatarUrl?, status? }` (at least one field) | `200 OK`, `400`, `401`, `404` | Yes (Bearer) | `FR-AUTH-04` |
 | **POST** | `/api/communities` | Create community | JSON: `{ name, description }` | `201 Created`, `400`, `409` | Yes (Bearer) | `FR-COM-01` |
 | **GET** | `/api/communities` | List joined communities | Query: `?page=1&limit=20` | `200 OK`, `401` | Yes (Bearer) | `FR-COM-02` |
 | **POST** | `/api/communities/:id/invites` | Generate community invite link | JSON: `{ maxUses, expiresInHours }` | `201 Created`, `403` | Yes (Admin) | `FR-COM-02` |

@@ -34,6 +34,15 @@ function createAuthController(authService) {
         next(error);
       }
     },
+
+    async updateProfile(request, response, next) {
+      try {
+        const user = await authService.updateProfile(request.user.id, request.validatedBody);
+        response.status(200).json({ status: 'success', data: user });
+      } catch (error) {
+        next(error);
+      }
+    },
   };
 }
 

@@ -52,4 +52,27 @@ const loginSchema = z
   })
   .strict('Unexpected fields are not allowed');
 
-module.exports = { registerSchema, loginSchema };
+const profileUpdateSchema = z
+  .object({
+    displayName: z
+      .string({ error: 'Display name must be a string' })
+      .trim()
+      .min(1, 'Display name must not be empty')
+      .max(50, 'Display name must contain at most 50 characters')
+      .optional(),
+    avatarUrl: z
+      .string()
+      .url('Avatar URL must be a valid URL')
+      .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol), {
+        message: 'Avatar URL must use HTTP or HTTPS',
+      })
+      .nullable()
+      .optional(),
+    status: z.enum(['online', 'idle', 'offline']).optional(),
+  })
+  .strict('Only displayName, avatarUrl, and status may be updated')
+  .refine((profile) => Object.keys(profile).length > 0, {
+    message: 'At least one profile field must be provided',
+  });
+
+module.exports = { registerSchema, loginSchema, profileUpdateSchema };
