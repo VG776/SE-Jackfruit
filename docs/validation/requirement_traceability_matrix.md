@@ -42,6 +42,7 @@ This incremental RTM records the implementation and verification added for US-08
 - Saved messages atomically persist id, channel_id, sender_id, content, created_at, and updated_at.
 - Both REST and WebSocket SEND_MESSAGE routes return structured responses / acks containing message ID, channel ID, timestamp, and optional clientNonce.
 
+
 # Requirement Traceability Matrix Update — US-09
 
 | Requirement ID | Requirement | Implementation | Verification | Status / boundary |
@@ -55,3 +56,13 @@ This incremental RTM records the implementation and verification added for US-08
 - A successful WebSocket `ACK` means the message was persisted and the server completed its authorized subscriber fan-out attempt; it is not a per-client read receipt.
 - Reconnecting clients must request channel history with the last returned `nextCursor` until `hasMore` is false.
 - The performance command must be run against the intended deployment with the test environment details recorded alongside its JSON output.
+
+
+# Requirement Traceability Matrix Update — NFR-02 & NFR-04
+
+This incremental RTM records the implementation and verification added for NFR-02 and NFR-04 (Sprint 1 non-functional requirements).
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| SRS §6.3 / NFR-02 | Validate authentication, authorization, rate limiting, and sensitive data protections. | Bcrypt hashing, Express rate-limiter, Zod input validation, sanitization in `errorHandler.js`. | `security.validation.test.js`, `security_validation_report.md`, `SEC-01` through `SEC-08`. | Verified 100% compliance: salted bcrypt hash storage, 401 on missing/invalid JWT, 429 on abuse, and exclusion of secrets from errors/responses. |
+| SRS §6.4 / NFR-04 | Verify maintainability, testability, and portability across environments. | Decoupled 4-tier architecture, dependency injection, in-memory `pg-mem` test fixtures, `.env.example`. | `maintainability_portability_report.md`, Jest unit/integration suites, ESLint. | Verified modular architecture, 100% automated test reproducibility, and clean lint execution without environmental dependencies. |
