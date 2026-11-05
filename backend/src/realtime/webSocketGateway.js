@@ -22,6 +22,22 @@ function sendError(socket, code, detail) {
   }
 }
 
+async function broadcastToAuthorizedMembers(webSocketServer, channelService, channelId, message) {
+  const payload = JSON.stringify({ type: 'MESSAGE_CREATED', payload: message });
+  await Promise.all([...webSocketServer.clients].map(async (recipient) => {
+    if (recipient.readyState !== recipient.OPEN || !recipient.channels?.has(channelId)) return;
+    try {
+      await channelService.assertCanAccessChannel(recipient.userId, channelId);
+      if (recipient.readyState === recipient.OPEN && recipient.channels.has(channelId)) {
+        recipient.send(payload);
+      }
+    } catch (_error) {
+      // A subscription is rechecked at delivery time so removed members stop receiving data.
+      recipient.channels.delete(channelId);
+    }
+  }));
+}
+
 function createWebSocketGateway(server, { authService, channelService, messageService }) {
   const webSocketServer = new WebSocketServer({
     noServer: true,
@@ -113,6 +129,8 @@ function createWebSocketGateway(server, { authService, channelService, messageSe
             content,
             clientNonce,
           });
+
+          await broadcastToAuthorizedMembers(webSocketServer, channelService, channelId, savedMessage);
 
           socket.send(
             JSON.stringify({
