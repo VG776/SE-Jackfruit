@@ -185,6 +185,19 @@ class AuthService {
 
     return toSafeUserDTO(user);
   }
+
+  async updateProfile(userId, profile) {
+    const user = await this.userRepository.updateProfile(userId, profile);
+    if (!user) {
+      throw new AppError({
+        status: 404,
+        code: 'RESOURCE_NOT_FOUND',
+        detail: 'The requested resource could not be found.',
+      });
+    }
+
+    return toSafeUserDTO(user);
+  }
 }
 
 module.exports = { AuthService, BCRYPT_SALT_ROUNDS };
