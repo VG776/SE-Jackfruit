@@ -57,6 +57,13 @@ class ChannelService {
     this.permissionRepository = permissionRepository;
   }
 
+  async list(userId, communityId) {
+    const role = await this.permissionRepository.roleInCommunity(userId, communityId);
+    if (!role) throw communityNotFoundError();
+    const channels = await this.channelRepository.listForCommunity(communityId);
+    return channels.map(toChannelDto);
+  }
+
   async assertCanManageChannels(userId, communityId, notFoundError = communityNotFoundError) {
     const role = await this.permissionRepository.roleInCommunity(userId, communityId);
     if (!role) throw notFoundError();

@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('node:path');
 const { createAuthRouter } = require('./routes/authRoutes');
 const { createChannelRouter } = require('./routes/channelRoutes');
 const { createMessageRouter } = require('./routes/messageRoutes');
@@ -37,6 +38,8 @@ function createApp({
   if (messageService) {
     app.use('/api', createMessageRouter(messageService, apiAuthenticate));
   }
+
+  app.use(express.static(path.resolve(__dirname, '../../frontend/src')));
 
   app.use((request, _response, next) => {
     next(

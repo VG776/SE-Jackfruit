@@ -10,6 +10,7 @@ function createCommunityRouter(communityService, authService) {
   const controller = createCommunityController(communityService);
   const authenticate = createAuthenticateMiddleware(authService);
 
+  router.get('/', authenticate, requireAuthenticatedUser, controller.list);
   router.post('/', authenticate, requireAuthenticatedUser, validate(createCommunitySchema), controller.create);
 
   return router;

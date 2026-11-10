@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#142b29">
+  <title>NexusChat</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/chat.js" defer></script>
+</head>
+<body>
+  <section id="auth-screen" class="auth-screen">
+    <aside class="auth-story">
+      <div class="brand"><span class="logo" aria-hidden="true">N</span> NexusChat</div>
+      <div class="story-copy">
+        <p class="eyebrow">TEAM MESSAGING</p>
+        <h1>Good work<br>starts here.</h1>
+        <p>Keep conversations, decisions, and updates together in channels your team can find again.</p>
+        <div class="story-channel"><span>#</span><div><strong>general</strong><small>A place for everyone on the team</small></div></div>
+      </div>
+      <p class="story-footer"><span class="dot"></span> Communities · Channels · Live messages</p>
+    </aside>
+    <main class="auth-main">
+      <div class="auth-card">
+        <p class="eyebrow">YOUR WORKSPACE</p>
+        <h2 id="auth-title">Welcome back</h2>
+        <p id="auth-copy" class="muted">Sign in to open your communities.</p>
+        <form id="auth-form">
+          <label>Username <input name="username" required maxlength="30" autocomplete="username" placeholder="Your username"></label>
+          <label id="email-field" hidden>Email <input name="email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com"></label>
+          <label>Password <input name="password" type="password" required autocomplete="current-password" placeholder="Your password"></label>
+          <p id="auth-error" class="error" role="alert" hidden></p>
+          <button id="auth-submit" class="primary" type="submit">Sign in</button>
+        </form>
+        <p class="auth-switch"><span id="auth-prompt">New to NexusChat?</span> <button id="auth-toggle" class="text-button">Create an account</button></p>
+        <section id="demo-accounts" class="demo-accounts" hidden aria-label="Recording demo accounts">
+          <p class="eyebrow">DEMO ACCOUNTS</p>
+          <p class="muted">Open a second tab to see messages arrive live.</p>
+          <div class="demo-buttons">
+            <button class="secondary" data-demo-user="demo_owner">Sign in as owner</button>
+            <button class="secondary" data-demo-user="demo_member">Sign in as member</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </section>
+  <div id="workspace" class="workspace" hidden>
+    <aside class="sidebar" aria-label="Workspace navigation">
+      <div class="brand"><span class="logo" aria-hidden="true">N</span> NexusChat</div>
+      <div class="sidebar-body">
+        <div class="sidebar-heading"><span>COMMUNITIES</span><button id="new-community" class="icon-button" aria-label="Create community" title="Create community">+</button></div>
+        <nav id="communities" class="nav-list" aria-label="Communities"></nav>
+        <div class="sidebar-heading"><span>TEXT CHANNELS</span><button id="new-channel" class="icon-button" aria-label="Create channel" title="Create channel">+</button></div>
+        <nav id="channels" class="nav-list" aria-label="Text channels"></nav>
+      </div>
+      <footer class="profile"><span id="profile-avatar" class="avatar"></span><div><strong id="profile-name"></strong><small id="profile-role"></small></div><button id="logout" class="icon-button" title="Sign out" aria-label="Sign out">↪</button></footer>
+    </aside>
+    <main class="chat">
+      <header class="chat-header">
+        <div class="channel-heading"><span class="channel-icon" aria-hidden="true">#</span><div><p id="community-name" class="eyebrow">WORKSPACE</p><h1 id="channel-name">Choose a channel</h1></div></div>
+        <div class="chat-tools"><span id="connection" class="connection" role="status">Offline</span><button id="channel-settings" class="secondary" disabled>Channel settings</button></div>
+      </header>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <section id="messages" class="messages" aria-label="Messages" aria-live="polite"></section>
+      <form id="composer" class="composer" hidden>
+        <label class="sr-only" for="message-input">Message</label>
+        <input id="message-input" name="message" required maxlength="2000" autocomplete="off" placeholder="Write a message">
+        <button id="send" class="primary" type="submit">Send <span aria-hidden="true">↗</span></button>
+      </form>
+    </main>
+  </div>
+  <dialog id="editor">
+    <form id="editor-form">
+      <p class="eyebrow">WORKSPACE SETTINGS</p>
+      <h2 id="editor-title"></h2>
+      <p id="editor-copy" class="muted" hidden></p>
+      <label id="editor-name-field">Name <input id="editor-name" name="name" maxlength="100"></label>
+      <label id="editor-description-field" hidden>Description <textarea name="description" maxlength="500" rows="3"></textarea></label>
+      <p id="editor-error" class="error" role="alert" hidden></p>
+      <div class="editor-actions"><button id="delete-channel" type="button" class="text-button danger-text" hidden>Delete channel</button><div class="spacer"></div><button id="cancel-editor" class="secondary" type="button">Cancel</button><button id="save-editor" class="primary" type="submit">Save</button></div>
+    </form>
+  </dialog>
+</body>
+</html>

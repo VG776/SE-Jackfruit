@@ -1,5 +1,14 @@
 function createCommunityController(communityService) {
   return {
+    async list(request, response, next) {
+      try {
+        const communities = await communityService.listForUser(request.authenticatedUserId);
+        response.json({ status: 'success', data: communities });
+      } catch (error) {
+        next(error);
+      }
+    },
+
     async create(request, response, next) {
       try {
         const community = await communityService.create({

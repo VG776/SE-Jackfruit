@@ -232,6 +232,33 @@ describe('US-08 Message sending API integration (FR-MSG-01, FR-COM-04)', () => {
   });
 
   describe('Message history and reconnection (FR-MSG-02)', () => {
+    test('records the actual send time and returns messages oldest first', async () => {
+      const route = `/api/channels/${CHANNEL_ID}/messages`;
+      const send = async (content) => {
+        const started = Date.now();
+        const result = await request(context.app)
+          .post(route)
+          .set('x-test-user-id', MEMBER_ID)
+          .send({ content })
+          .expect(201);
+        const message = result.body.data;
+        expect(Date.parse(message.createdAt)).toBeGreaterThanOrEqual(started);
+        expect(Date.parse(message.createdAt)).toBeLessThanOrEqual(Date.now());
+        return message;
+      };
+
+      const first = await send('First message');
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      const second = await send('Second message');
+      expect(Date.parse(second.createdAt)).toBeGreaterThan(Date.parse(first.createdAt));
+
+      const history = await request(context.app).get(route).set('x-test-user-id', OWNER_ID).expect(200);
+      expect(history.body.data.messages.map(({ id, createdAt }) => ({ id, createdAt }))).toEqual([
+        { id: first.id, createdAt: first.createdAt },
+        { id: second.id, createdAt: second.createdAt },
+      ]);
+    });
+
     test('returns an authenticated channel history page and a cursor for older messages', async () => {
       const first = await context.messageService.sendMessage(MEMBER_ID, CHANNEL_ID, {
         content: 'Older message',

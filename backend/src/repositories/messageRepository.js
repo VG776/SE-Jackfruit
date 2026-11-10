@@ -4,11 +4,12 @@ class MessageRepository {
   }
 
   async create({ id, channelId, senderId, content }) {
+    const sentAt = new Date().toISOString();
     const result = await this.pool.query(
-      `INSERT INTO messages (id, channel_id, sender_id, content)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO messages (id, channel_id, sender_id, content, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $5)
        RETURNING id, channel_id, sender_id, content, created_at, updated_at`,
-      [id, channelId, senderId, content],
+      [id, channelId, senderId, content, sentAt],
     );
 
     return result.rows[0];

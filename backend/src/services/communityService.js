@@ -15,6 +15,10 @@ class CommunityService {
     this.communityRepository = communityRepository;
   }
 
+  listForUser(userId) {
+    return this.communityRepository.listForUser(userId);
+  }
+
   async create({ name, description, ownerId }) {
     const trimmedName = name.trim();
 

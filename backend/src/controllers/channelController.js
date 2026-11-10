@@ -1,5 +1,17 @@
 function createChannelController(channelService) {
   return {
+    async list(request, response, next) {
+      try {
+        const channels = await channelService.list(
+          request.authenticatedUserId,
+          request.validatedParams.communityId,
+        );
+        response.json({ status: 'success', data: channels });
+      } catch (error) {
+        next(error);
+      }
+    },
+
     async create(request, response, next) {
       try {
         const channel = await channelService.create(

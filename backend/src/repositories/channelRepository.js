@@ -3,6 +3,17 @@ class ChannelRepository {
     this.pool = pool;
   }
 
+  async listForCommunity(communityId) {
+    const result = await this.pool.query(
+      `SELECT id, community_id, name, type, created_at, updated_at
+         FROM channels
+        WHERE community_id = $1
+        ORDER BY created_at, id`,
+      [communityId],
+    );
+    return result.rows;
+  }
+
   async findById(channelId) {
     const result = await this.pool.query(
       `SELECT id, community_id, name, type, created_at, updated_at
