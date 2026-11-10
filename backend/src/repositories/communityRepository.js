@@ -3,6 +3,19 @@ class CommunityRepository {
     this.pool = pool;
   }
 
+  async listForUser(userId) {
+    const result = await this.pool.query(
+      `SELECT c.id, c.name, c.description,
+              CASE WHEN c.owner_id = $1 THEN 'admin' ELSE cm.role END AS role
+         FROM communities c
+         LEFT JOIN community_members cm ON cm.community_id = c.id AND cm.user_id = $1
+        WHERE c.owner_id = $1 OR cm.user_id IS NOT NULL
+        ORDER BY c.name, c.id`,
+      [userId],
+    );
+    return result.rows;
+  }
+
   async findByOwnerAndName(ownerId, name) {
     const result = await this.pool.query(
       `SELECT id, owner_id, name

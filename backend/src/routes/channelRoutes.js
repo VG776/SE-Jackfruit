@@ -26,6 +26,13 @@ function createChannelRouter(channelService, authenticate) {
     target: 'validatedQuery',
   });
 
+  router.get(
+    '/communities/:communityId/channels',
+    authenticate,
+    requireAuthenticatedUser,
+    validateCommunityParams,
+    controller.list,
+  );
   router.post(
     '/communities/:communityId/channels',
     authenticate,

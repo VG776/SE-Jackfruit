@@ -11,29 +11,33 @@ const { MessageService } = require('./services/messageService');
 const { createApp } = require('./app');
 const { createWebSocketGateway } = require('./realtime/webSocketGateway');
 
-const port = Number(process.env.API_PORT || 5000);
-const pool = createDatabasePool();
-const userRepository = new UserRepository(pool);
-const communityService = new CommunityService(new CommunityRepository(pool));
-const channelRepository = new ChannelRepository(pool);
-const channelPermissionRepository = new ChannelPermissionRepository(pool);
-const messageRepository = new MessageRepository(pool);
-const authService = new AuthService(userRepository);
-const channelService = new ChannelService(channelRepository, channelPermissionRepository);
-const messageService = new MessageService(messageRepository, channelService);
-const app = createApp({ authService, communityService, channelService, messageService });
-
-const server = app.listen(port, () => {
-  console.log(`NexusChat API listening on port ${port}.`);
-});
-const webSocketServer = createWebSocketGateway(server, { authService, channelService, messageService });
-
-async function shutDown() {
-  webSocketServer.close();
-  server.close(async () => {
-    await pool.end();
-  });
+function createServer(pool, authOptions = {}) {
+  const authService = new AuthService(new UserRepository(pool), undefined, undefined, authOptions);
+  const communityService = new CommunityService(new CommunityRepository(pool));
+  const channelService = new ChannelService(
+    new ChannelRepository(pool),
+    new ChannelPermissionRepository(pool),
+  );
+  const messageService = new MessageService(new MessageRepository(pool), channelService);
+  const app = createApp({ authService, communityService, channelService, messageService });
+  const server = require('node:http').createServer(app);
+  const webSocketServer = createWebSocketGateway(server, { authService, channelService, messageService });
+  return { server, webSocketServer, authService, communityService, channelService, messageService };
 }
 
-process.on('SIGINT', shutDown);
-process.on('SIGTERM', shutDown);
+if (require.main === module) {
+  const port = Number(process.env.API_PORT || 5000);
+  const pool = createDatabasePool();
+  const { server, webSocketServer } = createServer(pool);
+  server.listen(port, () => console.log(`NexusChat: http://localhost:${port}`));
+
+  const shutDown = () => {
+    for (const socket of webSocketServer.clients) socket.terminate();
+    webSocketServer.close();
+    server.close(() => pool.end());
+  };
+  process.once('SIGINT', shutDown);
+  process.once('SIGTERM', shutDown);
+}
+
+module.exports = { createServer };
