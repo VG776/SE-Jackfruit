@@ -5,6 +5,7 @@ const { createChannelRouter } = require('./routes/channelRoutes');
 const { createMessageRouter } = require('./routes/messageRoutes');
 const { createUserRouter } = require('./routes/userRoutes');
 const { createCommunityRouter } = require('./routes/communityRoutes');
+const { createMembershipRouter } = require('./routes/membershipRoutes');
 const { createAuthenticateMiddleware } = require('./middleware/authenticate');
 const { errorHandler } = require('./middleware/errorHandler');
 const { AppError } = require('./errors/AppError');
@@ -14,6 +15,7 @@ function createApp({
   communityService,
   channelService,
   messageService,
+  membershipService,
   authenticate,
   enableRateLimit = true,
 }) {
@@ -37,6 +39,10 @@ function createApp({
 
   if (messageService) {
     app.use('/api', createMessageRouter(messageService, apiAuthenticate));
+  }
+
+  if (membershipService) {
+    app.use('/api', createMembershipRouter(membershipService, apiAuthenticate));
   }
 
   app.use(express.static(path.resolve(__dirname, '../../frontend/src')));
