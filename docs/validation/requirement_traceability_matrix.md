@@ -95,3 +95,13 @@ This incremental RTM records the implementation and verification added for NFR-0
 |---|---|---|---|---|
 | SRS §6.3 / NFR-02 | Validate authentication, authorization, rate limiting, and sensitive data protections. | Bcrypt hashing, Express rate-limiter, Zod input validation, sanitization in `errorHandler.js`. | `security.validation.test.js`, `security_validation_report.md`, `SEC-01` through `SEC-08`. | Verified 100% compliance: salted bcrypt hash storage, 401 on missing/invalid JWT, 429 on abuse, and exclusion of secrets from errors/responses. |
 | SRS §6.4 / NFR-04 | Verify maintainability, testability, and portability across environments. | Decoupled 4-tier architecture, dependency injection, in-memory `pg-mem` test fixtures, `.env.example`. | `maintainability_portability_report.md`, Jest unit/integration suites, ESLint. | Verified modular architecture, 100% automated test reproducibility, and clean lint execution without environmental dependencies. |
+
+# Requirement Traceability Matrix Update — US-10
+
+This incremental RTM records the implementation and verification added for US-10 (Send and receive direct messages).
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| FR-MSG-03 | One-to-one direct messages accessible only to participants. Self-messaging rejected. | `POST /api/direct-messages/conversations`, `POST /api/direct-messages/conversations/:conversationId/messages`, `GET /api/direct-messages/conversations/:conversationId/messages`, `DirectMessageService`, `DirectMessageRepository`, `directMessageSchemas.js`, migration `007_create_direct_messages.sql`. | `directMessageService.test.js`, `directMessage.integration.test.js`. | Senders and recipients must be distinct registered users. Direct conversations enforce canonical user ordering `(user_a_id < user_b_id)` with unique constraint. Messages are stored chronologically. |
+| FR-COM-04 | Enforce server-side permissions on direct conversations. | `DirectMessageService.assertParticipant` validates caller is either `user_a_id` or `user_b_id`. | `directMessage.integration.test.js`, `directMessageService.test.js`. | Non-participants attempting to read or send messages receive 403 `INSUFFICIENT_PERMISSIONS`. Unauthenticated requests return 401 `AUTHENTICATION_REQUIRED`. Missing conversations return 404 `CONVERSATION_NOT_FOUND`. |
+

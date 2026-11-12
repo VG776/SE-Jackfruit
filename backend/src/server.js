@@ -6,10 +6,12 @@ const { ChannelRepository } = require('./repositories/channelRepository');
 const { ChannelPermissionRepository } = require('./repositories/channelPermissionRepository');
 const { MessageRepository } = require('./repositories/messageRepository');
 const { MembershipRepository } = require('./repositories/membershipRepository');
+const DirectMessageRepository = require('./repositories/directMessageRepository');
 const { AuthService } = require('./services/authService');
 const { ChannelService } = require('./services/channelService');
 const { MessageService } = require('./services/messageService');
 const { MembershipService } = require('./services/membershipService');
+const DirectMessageService = require('./services/directMessageService');
 const { createApp } = require('./app');
 const { createWebSocketGateway } = require('./realtime/webSocketGateway');
 
@@ -22,12 +24,15 @@ function createServer(pool, authOptions = {}) {
   );
   const messageService = new MessageService(new MessageRepository(pool), channelService);
   const membershipService = new MembershipService(new MembershipRepository(pool));
+  const directMessageRepository = new DirectMessageRepository(pool);
+  const directMessageService = new DirectMessageService(directMessageRepository, authService.userRepository);
   const app = createApp({
     authService,
     communityService,
     channelService,
     messageService,
     membershipService,
+    directMessageService,
   });
   const server = require('node:http').createServer(app);
   const webSocketServer = createWebSocketGateway(server, { authService, channelService, messageService });
@@ -39,6 +44,7 @@ function createServer(pool, authOptions = {}) {
     channelService,
     messageService,
     membershipService,
+    directMessageService,
   };
 }
 
