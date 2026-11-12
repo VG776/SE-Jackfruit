@@ -12,6 +12,7 @@ function createMessageController(messageService) {
         next(error);
       }
     },
+
     async sendMessage(request, response, next) {
       try {
         const message = await messageService.sendMessage(
@@ -20,6 +21,33 @@ function createMessageController(messageService) {
           request.validatedBody,
         );
         response.status(201).json({ status: 'success', data: message });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async editMessage(request, response, next) {
+      try {
+        const message = await messageService.editMessage(
+          request.authenticatedUserId,
+          request.validatedParams.channelId,
+          request.validatedParams.messageId,
+          request.validatedBody,
+        );
+        response.status(200).json({ status: 'success', data: message });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async deleteMessage(request, response, next) {
+      try {
+        const result = await messageService.deleteMessage(
+          request.authenticatedUserId,
+          request.validatedParams.channelId,
+          request.validatedParams.messageId,
+        );
+        response.status(200).json({ status: 'success', data: result });
       } catch (error) {
         next(error);
       }
