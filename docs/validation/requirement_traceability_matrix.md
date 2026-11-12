@@ -3,6 +3,19 @@
 This incremental RTM records the implementation and verification added for US-07. The referenced
 baseline workbook (`07_Requirement_Traceability_Matrix.xlsx`) is not present in this repository.
 
+# Requirement Traceability Matrix Update — US-03
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| FR-AUTH-04 | Let an authenticated user view and update permitted profile fields, rejecting invalid values and protecting account fields. | `GET /api/users/me`, `PUT /api/users/me`, `AuthService.updateProfile`, `UserRepository.updateProfile`, and `profileUpdateSchema`. | `profile.integration.test.js` covers profile retrieval, valid updates, invalid values, authentication, and read-only account fields. | Users may update only their own display name, HTTP(S) avatar URL, and presence status. Username, email, account ID, and credentials cannot be changed through this profile API. |
+
+## US-03 field rules
+
+- `displayName`: trimmed string from 1 to 50 characters.
+- `avatarUrl`: HTTP or HTTPS URL, or `null` to clear it.
+- `status`: one of `online`, `idle`, or `offline`.
+- Profile updates use the authenticated token subject as the user ID; request bodies cannot select a different user.
+
 | Requirement ID | Requirement | Implementation | Verification | Status / boundary |
 |---|---|---|---|---|
 | FR-COM-04 | Verify authentication and community/channel permissions on the server before protected operations; reject unauthorized access without changing protected state. | REST authentication middleware; `requireAuthenticatedUser`; `ChannelService`; `ChannelPermissionRepository`; WebSocket gateway. | `channel.integration.test.js`; `webSocketGateway.integration.test.js`; `channelService.test.js`; `TC-F11`; `SEC-01` to `SEC-03`; `SEC-08`. | Implemented for current community creation, channel create/rename/delete, and WebSocket join/leave operations. Membership, messaging, and moderation routes are not implemented yet and have no protected operations to guard. |

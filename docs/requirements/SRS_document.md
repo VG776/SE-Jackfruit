@@ -483,7 +483,7 @@ The requirements below describe the expected behaviour of the MVP. “Shall” i
 
 **FR-AUTH-03 \[High\]:** The system shall allow an authenticated user to log out and shall invalidate the associated active session or token according to the chosen authentication design.
 
-**FR-AUTH-04 \[Medium\]:** The system shall allow a user to view and update the profile fields permitted by the application. Invalid values shall be rejected with a clear validation message.
+**FR-AUTH-04 \[Medium\]:** The system shall allow a user to view and update the profile fields permitted by the application. For the current release, editable fields are display name (1–50 characters), avatar URL (HTTP/HTTPS URL or null), and presence status (`online`, `idle`, or `offline`). Username, email, account ID, and credentials are read-only through profile operations. Invalid values shall be rejected with a clear validation message.
 
 ## 5.2 Community and Channel Management
 
