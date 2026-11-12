@@ -17,6 +17,7 @@ const migrations = [
   path.resolve(__dirname, '../../database/migrations/004_create_messages.sql'),
   path.resolve(__dirname, '../../database/migrations/005_index_message_history.sql'),
   path.resolve(__dirname, '../../database/migrations/006_create_community_invites.sql'),
+  path.resolve(__dirname, '../../database/migrations/007_add_message_soft_delete.sql'),
 ];
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
