@@ -5,9 +5,11 @@ const { CommunityService } = require('./services/communityService');
 const { ChannelRepository } = require('./repositories/channelRepository');
 const { ChannelPermissionRepository } = require('./repositories/channelPermissionRepository');
 const { MessageRepository } = require('./repositories/messageRepository');
+const { MembershipRepository } = require('./repositories/membershipRepository');
 const { AuthService } = require('./services/authService');
 const { ChannelService } = require('./services/channelService');
 const { MessageService } = require('./services/messageService');
+const { MembershipService } = require('./services/membershipService');
 const { createApp } = require('./app');
 const { createWebSocketGateway } = require('./realtime/webSocketGateway');
 
@@ -19,10 +21,25 @@ function createServer(pool, authOptions = {}) {
     new ChannelPermissionRepository(pool),
   );
   const messageService = new MessageService(new MessageRepository(pool), channelService);
-  const app = createApp({ authService, communityService, channelService, messageService });
+  const membershipService = new MembershipService(new MembershipRepository(pool));
+  const app = createApp({
+    authService,
+    communityService,
+    channelService,
+    messageService,
+    membershipService,
+  });
   const server = require('node:http').createServer(app);
   const webSocketServer = createWebSocketGateway(server, { authService, channelService, messageService });
-  return { server, webSocketServer, authService, communityService, channelService, messageService };
+  return {
+    server,
+    webSocketServer,
+    authService,
+    communityService,
+    channelService,
+    messageService,
+    membershipService,
+  };
 }
 
 if (require.main === module) {

@@ -1,3 +1,19 @@
+# Requirement Traceability Matrix Update — US-05
+
+This incremental RTM records the implementation and verification added for US-05 (Manage invitations and membership).
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| FR-COM-02 | Allow community administrators to invite users and manage community membership, rejecting unauthorized users. | `POST /api/communities/:communityId/invites`, `POST /api/invites/:code/join`, `GET /api/communities/:communityId/members`, `PATCH /api/communities/:communityId/members/:userId`, `DELETE /api/communities/:communityId/members/:userId`, `MembershipService`, `MembershipRepository`, `membershipSchemas.js`, and migration `006_create_community_invites.sql`. | `membership.integration.test.js`, `membershipService.test.js`, `TC-F08`, `TC-F09`, `SEC-02`, `SEC-03`. | Administrators and owners can generate cryptographic invite tokens with optional max-uses and expirations, list community members, promote/demote member roles, and remove members. Members joining with an invite code are automatically enrolled as `member`. |
+| FR-COM-04 | Enforce server-side permissions for community invitation and membership operations. | `MembershipService.assertAdmin`, role verification against database `communities` and `community_members`. | `membership.integration.test.js`, `membershipService.test.js`, `TC-F09`, `SEC-02`. | Unauthenticated requests are rejected with 401. Non-members receive generic 404 identical to non-existent communities (preventing enumeration). Ordinary members attempting invite generation or membership changes receive 403. Community owner cannot be modified or removed (400). |
+
+## US-05 Enforced Rules
+
+- **Invite Generation:** `POST /api/communities/:communityId/invites` requires administrator or owner role. Supports optional integer `maxUses` (default: 1) and positive `expiresInHours`. Generates a 32-character hexadecimal cryptographically secure random token.
+- **Invite Joining:** `POST /api/invites/:code/join` allows authenticated users to join the community. Expired tokens or tokens reaching `maxUses` return 404 `INVITE_EXPIRED`. Users already in the community (or the owner) receive 409 `ALREADY_MEMBER`.
+- **Membership Listing:** `GET /api/communities/:communityId/members` allows any community member (owner, admin, moderator, member) to list members. Outsiders receive 404 `RESOURCE_NOT_FOUND`.
+- **Role Updates & Member Removal:** `PATCH /api/communities/:communityId/members/:userId` and `DELETE /api/communities/:communityId/members/:userId` are restricted to administrators. Changing the role of or removing the community owner is rejected with 400 `CANNOT_MODIFY_OWNER`.
+
 # Requirement Traceability Matrix Update — US-07
 
 This incremental RTM records the implementation and verification added for US-07. The referenced
