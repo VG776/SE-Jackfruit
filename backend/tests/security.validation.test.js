@@ -24,6 +24,7 @@ async function buildTestContext({ enableRateLimit = false } = {}) {
     '002_create_communities.sql',
     '003_create_channels.sql',
     '004_create_messages.sql',
+    '007_add_message_soft_delete.sql',
   ]) {
     const migration = path.resolve(__dirname, `../../database/migrations/${file}`);
     await pool.query(await fs.readFile(migration, 'utf8'));

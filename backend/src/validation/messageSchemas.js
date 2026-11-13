@@ -4,6 +4,11 @@ const channelParamsSchema = z.object({
   channelId: z.uuid('Channel ID must be a valid UUID'),
 });
 
+const messageParamsSchema = z.object({
+  channelId: z.uuid('Channel ID must be a valid UUID'),
+  messageId: z.uuid('Message ID must be a valid UUID'),
+});
+
 const sendMessageSchema = z
   .object({
     content: z
@@ -15,6 +20,16 @@ const sendMessageSchema = z
   })
   .strict('Unexpected fields are not allowed');
 
+const editMessageSchema = z
+  .object({
+    content: z
+      .string({ error: 'Message content is required and must be a string' })
+      .trim()
+      .min(1, 'Message content must not be empty')
+      .max(2000, 'Message content must not exceed 2000 characters'),
+  })
+  .strict('Unexpected fields are not allowed');
+
 const messageHistoryQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   cursor: z.string().min(1).max(256).optional(),
@@ -22,6 +37,8 @@ const messageHistoryQuerySchema = z.object({
 
 module.exports = {
   channelParamsSchema,
+  messageParamsSchema,
   sendMessageSchema,
+  editMessageSchema,
   messageHistoryQuerySchema,
 };

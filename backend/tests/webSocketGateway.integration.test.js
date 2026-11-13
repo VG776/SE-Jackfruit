@@ -33,6 +33,7 @@ describe('US-07, US-08 and US-09 WebSocket permission enforcement & message deli
       '002_create_communities.sql',
       '003_create_channels.sql',
       '004_create_messages.sql',
+      '007_add_message_soft_delete.sql',
     ]) {
       const migration = path.resolve(__dirname, `../../database/migrations/${migrationName}`);
       await pool.query(await fs.readFile(migration, 'utf8'));
