@@ -7,6 +7,7 @@ const { createUserRouter } = require('./routes/userRoutes');
 const { createCommunityRouter } = require('./routes/communityRoutes');
 const { createMembershipRouter } = require('./routes/membershipRoutes');
 const { createDirectMessageRouter } = require('./routes/directMessageRoutes');
+const { createReactionRouter } = require('./routes/reactionRoutes');
 const { createAuthenticateMiddleware } = require('./middleware/authenticate');
 const { errorHandler } = require('./middleware/errorHandler');
 const { AppError } = require('./errors/AppError');
@@ -18,6 +19,7 @@ function createApp({
   messageService,
   membershipService,
   directMessageService,
+  reactionService,
   authenticate,
   enableRateLimit = true,
 }) {
@@ -49,6 +51,10 @@ function createApp({
 
   if (directMessageService) {
     app.use('/api', createDirectMessageRouter(directMessageService, apiAuthenticate));
+  }
+
+  if (reactionService) {
+    app.use('/api', createReactionRouter(reactionService, apiAuthenticate));
   }
 
   app.use(express.static(path.resolve(__dirname, '../../frontend/src')));
