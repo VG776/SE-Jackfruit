@@ -105,3 +105,16 @@ This incremental RTM records the implementation and verification added for US-10
 | FR-MSG-03 | One-to-one direct messages accessible only to participants. Self-messaging rejected. | `POST /api/direct-messages/conversations`, `POST /api/direct-messages/conversations/:conversationId/messages`, `GET /api/direct-messages/conversations/:conversationId/messages`, `DirectMessageService`, `DirectMessageRepository`, `directMessageSchemas.js`, migration `007_create_direct_messages.sql`. | `directMessageService.test.js`, `directMessage.integration.test.js`. | Senders and recipients must be distinct registered users. Direct conversations enforce canonical user ordering `(user_a_id < user_b_id)` with unique constraint. Messages are stored chronologically. |
 | FR-COM-04 | Enforce server-side permissions on direct conversations. | `DirectMessageService.assertParticipant` validates caller is either `user_a_id` or `user_b_id`. | `directMessage.integration.test.js`, `directMessageService.test.js`. | Non-participants attempting to read or send messages receive 403 `INSUFFICIENT_PERMISSIONS`. Unauthenticated requests return 401 `AUTHENTICATION_REQUIRED`. Missing conversations return 404 `CONVERSATION_NOT_FOUND`. |
 
+
+
+# Requirement Traceability Matrix Update — US-13
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| FR-UX-01 | Allow a member to add or remove a reaction on a message they can access; reject changes for inaccessible messages or invalid reaction values. | `POST /api/messages/:messageId/reactions`, `DELETE /api/messages/:messageId/reactions/:emoji`, `GET /api/messages/:messageId/reactions`; `ReactionService`, `ReactionRepository`, `reactionSchemas.js`; migration `008_create_message_reactions.sql`. | `reaction.integration.test.js`, `reactionService.test.js`; `TC-F20`. | Implemented for channel messages. Reaction values are limited to a fixed supported set. A user's identical reaction is stored once (primary key `message_id, user_id, emoji`); repeating the add is an idempotent `200` with `added: false`. Removing a reaction the caller does not hold returns `404`. |
+| FR-COM-04 | Enforce server-side permissions on reactions. | `ReactionService.assertCanAccessMessage` resolves the message's channel and calls `ChannelService.assertCanAccessChannel`. | Non-member, unauthenticated, missing and deleted-message cases in `reaction.integration.test.js`; `TC-F11`, `SEC-03`. | Non-members receive the same generic `MESSAGE_NOT_FOUND` 404 as a missing or deleted message. Unauthenticated requests receive `401`. |
+
+## US-13 boundary
+
+- Reactions apply to channel messages only; direct-message reactions are not part of this story.
+- Reaction counts are returned by the add and list endpoints. Reactions are not yet embedded in message history responses or pushed as WebSocket events, so clients refresh through the list endpoint.

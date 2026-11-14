@@ -7,6 +7,8 @@ const { ChannelPermissionRepository } = require('./repositories/channelPermissio
 const { MessageRepository } = require('./repositories/messageRepository');
 const { MembershipRepository } = require('./repositories/membershipRepository');
 const DirectMessageRepository = require('./repositories/directMessageRepository');
+const { ReactionRepository } = require('./repositories/reactionRepository');
+const { ReactionService } = require('./services/reactionService');
 const { AuthService } = require('./services/authService');
 const { ChannelService } = require('./services/channelService');
 const { MessageService } = require('./services/messageService');
@@ -22,11 +24,18 @@ function createServer(pool, authOptions = {}) {
     new ChannelRepository(pool),
     new ChannelPermissionRepository(pool),
   );
-  const messageService = new MessageService(new MessageRepository(pool), channelService);
+  const messageRepository = new MessageRepository(pool);
+  const messageService = new MessageService(messageRepository, channelService);
   const membershipService = new MembershipService(new MembershipRepository(pool));
   const directMessageRepository = new DirectMessageRepository(pool);
   const directMessageService = new DirectMessageService(directMessageRepository, authService.userRepository);
+  const reactionService = new ReactionService(
+    new ReactionRepository(pool),
+    messageRepository,
+    channelService,
+  );
   const app = createApp({
+    reactionService,
     authService,
     communityService,
     channelService,
@@ -45,6 +54,7 @@ function createServer(pool, authOptions = {}) {
     messageService,
     membershipService,
     directMessageService,
+    reactionService,
   };
 }
 
