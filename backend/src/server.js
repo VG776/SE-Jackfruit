@@ -9,6 +9,7 @@ const { MembershipRepository } = require('./repositories/membershipRepository');
 const DirectMessageRepository = require('./repositories/directMessageRepository');
 const { ReactionRepository } = require('./repositories/reactionRepository');
 const { SearchRepository } = require('./repositories/searchRepository');
+const { UnreadRepository } = require('./repositories/unreadRepository');
 const { ReactionService } = require('./services/reactionService');
 const { AuthService } = require('./services/authService');
 const { ChannelService } = require('./services/channelService');
@@ -16,6 +17,7 @@ const { MessageService } = require('./services/messageService');
 const { MembershipService } = require('./services/membershipService');
 const DirectMessageService = require('./services/directMessageService');
 const { SearchService } = require('./services/searchService');
+const { UnreadService } = require('./services/unreadService');
 const { createApp } = require('./app');
 const { createWebSocketGateway } = require('./realtime/webSocketGateway');
 
@@ -37,6 +39,7 @@ function createServer(pool, authOptions = {}) {
     channelService,
   );
   const searchService = new SearchService(new SearchRepository(pool));
+  const unreadService = new UnreadService(new UnreadRepository(pool), channelService);
 
   const app = createApp({
     reactionService,
@@ -47,9 +50,15 @@ function createServer(pool, authOptions = {}) {
     membershipService,
     directMessageService,
     searchService,
+    unreadService,
   });
   const server = require('node:http').createServer(app);
-  const webSocketServer = createWebSocketGateway(server, { authService, channelService, messageService });
+  const webSocketServer = createWebSocketGateway(server, {
+    authService,
+    channelService,
+    messageService,
+    unreadService,
+  });
   return {
     server,
     webSocketServer,
@@ -61,6 +70,7 @@ function createServer(pool, authOptions = {}) {
     directMessageService,
     reactionService,
     searchService,
+    unreadService,
   };
 }
 

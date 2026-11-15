@@ -66,7 +66,50 @@ async function broadcastToAuthorizedMembers(webSocketServer, channelService, cha
   );
 }
 
-function createWebSocketGateway(server, { authService, channelService, messageService }) {
+async function notifyAuthorizedUsersOfMessage(
+  webSocketServer,
+  channelService,
+  unreadService,
+  channelId,
+  message,
+  senderId,
+) {
+  if (!unreadService) return;
+
+  await Promise.all(
+    [...webSocketServer.clients].map(async (recipient) => {
+      if (recipient.readyState !== recipient.OPEN || recipient.userId === senderId) return;
+      try {
+        const channel = await channelService.assertCanAccessChannel(recipient.userId, channelId);
+        const unreadCount = await unreadService.getChannelUnreadCount(recipient.userId, channelId);
+        if (recipient.readyState !== recipient.OPEN) return;
+
+        if (recipient.channels?.has(channelId)) {
+          recipient.send(JSON.stringify({
+            type: 'UNREAD_COUNT_UPDATED',
+            payload: { channelId, unreadCount },
+          }));
+        } else {
+          recipient.send(JSON.stringify({
+            type: 'NEW_MESSAGE_NOTIFICATION',
+            payload: {
+              channelId,
+              channelName: channel.name,
+              messageId: message.id,
+              unreadCount,
+              createdAt: message.createdAt,
+            },
+          }));
+        }
+      } catch (_error) {
+        // Do not disclose activity to users who no longer have channel access.
+        recipient.channels?.delete(channelId);
+      }
+    }),
+  );
+}
+
+function createWebSocketGateway(server, { authService, channelService, messageService, unreadService }) {
   const webSocketServer = new WebSocketServer({
     noServer: true,
     maxPayload: 16 * 1024,
@@ -74,6 +117,20 @@ function createWebSocketGateway(server, { authService, channelService, messageSe
       return protocols.has(PROTOCOL) ? PROTOCOL : false;
     },
   });
+
+  if (typeof messageService?.onMessagePersisted === 'function') {
+    messageService.onMessagePersisted(async (message, senderId) => {
+      await broadcastToAuthorizedMembers(webSocketServer, channelService, message.channelId, message);
+      await notifyAuthorizedUsersOfMessage(
+        webSocketServer,
+        channelService,
+        unreadService,
+        message.channelId,
+        message,
+        senderId,
+      );
+    });
+  }
 
   server.on('upgrade', async (request, socket, head) => {
     const requestPath = new URL(request.url, 'http://localhost').pathname;
@@ -201,8 +258,6 @@ function createWebSocketGateway(server, { authService, channelService, messageSe
             content,
             clientNonce,
           });
-
-          await broadcastToAuthorizedMembers(webSocketServer, channelService, channelId, savedMessage);
 
           socket.send(
             JSON.stringify({

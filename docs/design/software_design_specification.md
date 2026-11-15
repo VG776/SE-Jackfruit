@@ -236,6 +236,8 @@ sequenceDiagram
 | **PATCH** | `/api/channels/:id` | Rename channel | JSON: `{ name }` | `200 OK`, `400`, `403` | Yes (Admin) | `FR-COM-03` |
 | **DELETE** | `/api/channels/:id` | Delete channel (destructive) | Query: `?confirm=true` | `204 No Content`, `403` | Yes (Admin) | `FR-COM-03, SRS 6.2` |
 | **GET** | `/api/channels/:channelId/messages` | Fetch channel message history | Query: `?limit=50&cursor=<opaque-cursor>`; response contains `messages`, `hasMore`, and `nextCursor` | `200 OK`, `400`, `401`, `404` | Yes (Member) | `FR-MSG-02` |
+| **GET** | `/api/unread-counts` | Retrieve persisted unread counts for accessible channels | None; response contains `totalUnreadCount` and `{ channelId, unreadCount }` entries | `200 OK`, `401` | Yes (Bearer) | `FR-UX-03` |
+| **POST** | `/api/channels/:channelId/read` | Mark the latest channel message as read for the caller | None; response contains `channelId`, `lastReadMessageId`, and current `unreadCount` | `200 OK`, `401`, `404` | Yes (Member) | `FR-UX-03` |
 | **POST** | `/api/channels/:id/messages` | Send message (REST fallback) | JSON: `{ content, clientNonce }` | `201 Created`, `400`, `403` | Yes (Member) | `FR-MSG-01` |
 | **PATCH** | `/api/messages/:id` | Edit message content | JSON: `{ content }` | `200 OK`, `403`, `404` | Yes (Author) | `FR-MSG-04` |
 | **DELETE** | `/api/messages/:id` | Delete / tombstone message | None | `204 No Content`, `403` | Yes (Author/Mod)| `FR-MSG-04, FR-MOD-01` |
@@ -398,10 +400,16 @@ interface WebSocketEnvelope<T> {
 4. **`MESSAGE_CREATED` (Server -> Authorized channel subscribers):**
    - Payload: Persisted message DTO `{ "id": "uuid", "channelId": "uuid", "senderId": "uuid", "content": "Hello", "createdAt": "timestamp", "updatedAt": "timestamp" }`.
    - Purpose: Broadcasts a saved message to joined clients whose channel access is still valid.
-5. **`TYPING_START` / `TYPING_STOP` (Client <-> Server):**
+5. **`NEW_MESSAGE_NOTIFICATION` (Server -> Authorized connected users not viewing the channel):**
+   - Payload: `{ "channelId": "uuid", "channelName": "general", "messageId": "uuid", "unreadCount": 3, "createdAt": "timestamp" }`.
+   - Purpose: Updates the in-app notification and unread badge after a persisted message. Access is rechecked before delivery; sender sockets are excluded.
+6. **`UNREAD_COUNT_UPDATED` (Server -> Authorized subscribers):**
+   - Payload: `{ "channelId": "uuid", "unreadCount": 0 }`.
+   - Purpose: Updates the channel badge when a message arrives in a channel to which the client is subscribed.
+7. **`TYPING_START` / `TYPING_STOP` (Client <-> Server):**
    - Payload: `{ "channelId": "uuid", "userId": "uuid", "username": "alice" }`
    - Purpose: Ephemeral typing presence indication; auto-cleared after 3 seconds.
-6. **`USER_PRESENCE_CHANGED` (Server -> Client):**
+8. **`USER_PRESENCE_CHANGED` (Server -> Client):**
    - Payload: `{ "userId": "uuid", "status": "ONLINE" | "IDLE" | "OFFLINE" }`
    - Purpose: Dispatched to mutual community members upon connection or heartbeat lapse.
 
