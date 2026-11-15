@@ -1,3 +1,20 @@
+# Requirement Traceability Matrix Update — US-14
+
+This incremental RTM records the implementation and verification added for US-14 (Search authorized messages).
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| FR-UX-02 | Search messages only within communities and conversations the requesting user is authorized to access, with no leakage of inaccessible text or metadata. | `GET /api/search`, `SearchService`, `SearchRepository`, `searchSchemas.js`. | `search.integration.test.js`, `searchService.test.js`, `TC-F21`, `TC-F22`. | Implemented for accessible channel messages. Results include snippet with highlighted matching terms (`<b>...</b>`), rank, sender, channel, and community metadata. Soft-deleted messages and messages from communities the user has not joined are strictly excluded. |
+| FR-COM-04 | Enforce server-side permissions for search queries. | `SearchRepository.searchMessages` SQL join with `communities` and `community_members`. | `search.integration.test.js`, `TC-F22`. | Unauthenticated requests are rejected with 401. Users without membership in the message's community receive zero results (totalMatches: 0) and cannot observe private conversation contents or metadata. |
+| SRS §6.1 | Search response time target of no more than 2 seconds under the defined evaluation dataset. | In-memory and PostgreSQL indexing, pagination (`page`, `limit`), `backend/scripts/benchmark-search.js`. | `search.integration.test.js` (TC-NF03), `npm run benchmark:search`. | Verified: Automated test suite validates sub-second response times ($\le 2$ seconds SLA) over the documented evaluation dataset. |
+
+## US-14 Enforced Rules
+
+- **Query Validation:** `GET /api/search` requires a non-empty `q` string parameter (1 to 200 characters). Supports optional `channelId` (UUID), `communityId` (UUID), `page` (default: 1), and `limit` (default: 20, max: 100).
+- **Authorization Scoping:** Search results are strictly limited to channels within communities owned by the caller or where the caller is an active member.
+- **Content Highlighting:** Matched search terms are highlighted in the generated snippet using `<b>` tags while preserving original text case.
+- **Exclusion of Soft-Deleted Records:** Messages with `deleted_at IS NOT NULL` are excluded from search results unconditionally.
+
 # Requirement Traceability Matrix Update — US-05
 
 This incremental RTM records the implementation and verification added for US-05 (Manage invitations and membership).
