@@ -8,6 +8,7 @@ const { createCommunityRouter } = require('./routes/communityRoutes');
 const { createMembershipRouter } = require('./routes/membershipRoutes');
 const { createDirectMessageRouter } = require('./routes/directMessageRoutes');
 const { createReactionRouter } = require('./routes/reactionRoutes');
+const { createModerationRouter } = require('./routes/moderationRoutes');
 const { createSearchRouter } = require('./routes/searchRoutes');
 const { createUnreadRouter } = require('./routes/unreadRoutes');
 const { createAuthenticateMiddleware } = require('./middleware/authenticate');
@@ -24,6 +25,7 @@ function createApp({
   reactionService,
   searchService,
   unreadService,
+  moderationService,
   authenticate,
   enableRateLimit = true,
 }) {
@@ -67,6 +69,10 @@ function createApp({
 
   if (unreadService) {
     app.use('/api', createUnreadRouter(unreadService, apiAuthenticate));
+  }
+
+  if (moderationService) {
+    app.use('/api', createModerationRouter(moderationService, apiAuthenticate));
   }
 
   app.use(express.static(path.resolve(__dirname, '../../frontend/src')));

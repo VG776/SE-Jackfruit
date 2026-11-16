@@ -44,9 +44,10 @@ function toMessageDto(message) {
 }
 
 class MessageService {
-  constructor(messageRepository, channelService) {
+  constructor(messageRepository, channelService, moderationService = null) {
     this.messageRepository = messageRepository;
     this.channelService = channelService;
+    this.moderationService = moderationService;
     this.messagePersistedListeners = new Set();
   }
 
@@ -191,6 +192,12 @@ class MessageService {
         : null;
       if (role !== 'admin' && role !== 'moderator') {
         throw insufficientPermissionsError();
+      }
+
+      // FR-MOD-01: removing another user's message is a moderation action and must be audited.
+      if (this.moderationService) {
+        const result = await this.moderationService.removeMessage(userId, channelId, messageId);
+        return { id: result.id, deleted: true };
       }
     }
 
