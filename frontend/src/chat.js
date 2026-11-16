@@ -17,6 +17,7 @@ let community;
 let channels = [];
 let channel;
 let messages = new Map();
+let unreadCounts = new Map();
 let socket;
 let joined = false;
 let retry;
@@ -85,6 +86,7 @@ function showAuth(message = '') {
   channels = [];
   channel = null;
   messages = new Map();
+  unreadCounts = new Map();
   sessionStorage.removeItem(tokenKey);
   if (editor.open) editor.close();
   byId('workspace').hidden = true;
@@ -127,6 +129,7 @@ async function enterWorkspace(profile) {
   notice('');
   renderNavigation();
   renderMessages();
+  refreshUnreadCounts();
   const session = token;
   try {
     const result = await api('/communities');
@@ -148,10 +151,40 @@ function navigationButton(item, selected, icon, select) {
   symbol.setAttribute('aria-hidden', 'true');
   symbol.textContent = icon;
   const name = document.createElement('span');
+  name.className = 'nav-name';
   name.textContent = item.name;
   button.append(symbol, name);
+  const unreadCount = unreadCounts.get(item.id) || 0;
+  if (unreadCount > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'nav-badge';
+    badge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+    badge.setAttribute('aria-label', `${unreadCount} unread messages`);
+    button.append(badge);
+  }
   button.addEventListener('click', select);
   return button;
+}
+
+async function refreshUnreadCounts() {
+  try {
+    const result = await api('/unread-counts');
+    unreadCounts = new Map(result.channels.map(({ channelId, unreadCount }) => [channelId, unreadCount]));
+    renderNavigation();
+  } catch (error) {
+    if (token) notice(error.message);
+  }
+}
+
+async function markChannelRead(id, view) {
+  try {
+    const result = await api('/channels/' + id + '/read', { method: 'POST' });
+    if (messages !== view) return;
+    unreadCounts.set(id, result.unreadCount);
+    renderNavigation();
+  } catch (error) {
+    if (messages === view) notice(error.message);
+  }
 }
 
 function renderNavigation() {
@@ -239,6 +272,7 @@ async function readHistory(id, view) {
     if (messages !== view) return;
     for (const message of result.messages) view.set(message.id, message);
     renderMessages();
+    if (document.visibilityState === 'visible') await markChannelRead(id, view);
   } catch (error) {
     if (messages === view) notice(error.message);
   }
@@ -276,11 +310,23 @@ function connect(id, view) {
     if (event.type === 'ACK' && event.event === 'JOIN_CHANNEL') {
       joined = true;
       connection('Live', true);
-      readHistory(id, view);
+      refreshUnreadCounts().then(() => {
+        if (socket === current && messages === view) readHistory(id, view);
+      });
     }
     if (event.type === 'MESSAGE_CREATED' && event.payload.channelId === id) {
       view.set(event.payload.id, event.payload);
       renderMessages();
+      if (document.visibilityState === 'visible') markChannelRead(id, view);
+    }
+    if (event.type === 'UNREAD_COUNT_UPDATED') {
+      unreadCounts.set(event.payload.channelId, event.payload.unreadCount);
+      renderNavigation();
+    }
+    if (event.type === 'NEW_MESSAGE_NOTIFICATION') {
+      unreadCounts.set(event.payload.channelId, event.payload.unreadCount);
+      renderNavigation();
+      notice(`New message in #${event.payload.channelName}`, true);
     }
     if (event.type === 'ACK' && event.event === 'SEND_MESSAGE' && pending && event.payload.clientNonce === pending.nonce) {
       if (input.value.trim() === pending.content) input.value = '';
@@ -422,6 +468,12 @@ authForm.addEventListener('submit', async (event) => {
     feedback(byId('auth-error'), error.message);
   } finally {
     button.disabled = false;
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && token && channel && !byId('workspace').hidden) {
+    markChannelRead(channel.id, messages);
   }
 });
 
