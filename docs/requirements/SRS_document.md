@@ -515,7 +515,7 @@ NexusChat allows users to create communities and organise conversations into sep
 
 **FR-UX-02 \[Medium\]:** The system shall allow a member to search messages only within communities and conversations they are authorized to access. Search results shall not reveal message text or metadata from inaccessible locations.
 
-**FR-UX-03 \[Medium\]:** The system shall maintain unread counts and notify users about relevant new messages. Reading a conversation shall update its unread state according to the agreed read-tracking rules.
+**FR-UX-03 \[Medium\]:** The system shall maintain per-channel unread counts for authenticated users with channel access. A user's own messages shall not increase that user's unread count. Reading a channel shall persist the latest message as that user's read cursor; messages created after that cursor shall count as unread. The system shall send an in-app notification or updated unread count to connected, authorized users when a new channel message is persisted. Unread counts shall be recoverable from persisted messages and read cursors after reconnecting.
 
 ## 5.5 Moderation and Audit
 

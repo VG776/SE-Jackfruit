@@ -2,6 +2,7 @@ const fs = require('fs/promises');
 const http = require('http');
 const path = require('path');
 const { newDb } = require('pg-mem');
+const request = require('supertest');
 const WebSocket = require('ws');
 const { createApp } = require('../src/app');
 const { ChannelRepository } = require('../src/repositories/channelRepository');
@@ -9,6 +10,8 @@ const { ChannelPermissionRepository } = require('../src/repositories/channelPerm
 const { ChannelService } = require('../src/services/channelService');
 const { MessageRepository } = require('../src/repositories/messageRepository');
 const { MessageService } = require('../src/services/messageService');
+const { UnreadRepository } = require('../src/repositories/unreadRepository');
+const { UnreadService } = require('../src/services/unreadService');
 const { createWebSocketGateway, PROTOCOL } = require('../src/realtime/webSocketGateway');
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
@@ -34,6 +37,7 @@ describe('US-07, US-08 and US-09 WebSocket permission enforcement & message deli
       '003_create_channels.sql',
       '004_create_messages.sql',
       '007_add_message_soft_delete.sql',
+      '009_create_channel_read_states.sql',
     ]) {
       const migration = path.resolve(__dirname, `../../database/migrations/${migrationName}`);
       await pool.query(await fs.readFile(migration, 'utf8'));
@@ -73,9 +77,15 @@ describe('US-07, US-08 and US-09 WebSocket permission enforcement & message deli
     );
     const messageRepository = new MessageRepository(pool);
     messageService = new MessageService(messageRepository, channelService);
+    const unreadService = new UnreadService(new UnreadRepository(pool), channelService);
 
-    server = http.createServer(createApp({ authService }));
-    gateway = createWebSocketGateway(server, { authService, channelService, messageService });
+    server = http.createServer(createApp({ authService, messageService }));
+    gateway = createWebSocketGateway(server, {
+      authService,
+      channelService,
+      messageService,
+      unreadService,
+    });
     await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
     baseUrl = `ws://127.0.0.1:${server.address().port}/api/ws`;
   });
@@ -352,6 +362,58 @@ describe('US-07, US-08 and US-09 WebSocket permission enforcement & message deli
         code: 'RESOURCE_NOT_FOUND',
       });
       socket.close();
+    });
+  });
+
+  describe('US-15 unread notifications', () => {
+    test('notifies an authorized connected member who is not in the channel and includes the unread count', async () => {
+      const recipient = connect('member-token');
+      const sender = connect('owner-token');
+      await Promise.all([
+        new Promise((resolve) => recipient.once('open', resolve)),
+        new Promise((resolve) => sender.once('open', resolve)),
+      ]);
+
+      const notification = nextMessage(
+        recipient,
+        (event) => event.type === 'NEW_MESSAGE_NOTIFICATION',
+      );
+      sender.send(JSON.stringify({
+        type: 'SEND_MESSAGE',
+        payload: { channelId: CHANNEL_ID, content: 'Unread notification event' },
+      }));
+
+      await expect(notification).resolves.toMatchObject({
+        type: 'NEW_MESSAGE_NOTIFICATION',
+        payload: {
+          channelId: CHANNEL_ID,
+          channelName: 'general',
+          unreadCount: 1,
+        },
+      });
+      recipient.close();
+      sender.close();
+    });
+
+    test('notifies connected members when a message is sent through the REST fallback', async () => {
+      const recipient = connect('member-token');
+      await new Promise((resolve) => recipient.once('open', resolve));
+      const notification = nextMessage(
+        recipient,
+        (event) => event.type === 'NEW_MESSAGE_NOTIFICATION',
+      );
+
+      const response = await request(server)
+        .post(`/api/channels/${CHANNEL_ID}/messages`)
+        .set('Authorization', 'Bearer owner-token')
+        .send({ content: 'REST fallback notification' });
+
+      expect(response.status).toBe(201);
+      await expect(notification).resolves.toMatchObject({
+        type: 'NEW_MESSAGE_NOTIFICATION',
+        payload: { channelId: CHANNEL_ID, unreadCount: 1 },
+      });
+      recipient.close();
     });
   });
 });

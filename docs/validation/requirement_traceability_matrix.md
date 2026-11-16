@@ -149,3 +149,17 @@ This incremental RTM records the implementation and verification added for US-10
 - Moderators may act on ordinary members. Admins may act on ordinary members and moderators. Only the owner may act on another admin; no actor may remove or ban the owner.
 - BAN is community-specific and blocks rejoining through an invite. KICK removes current membership but does not prevent a later invite-based join.
 - This change does not add a separate audit-log viewer or an unban endpoint; those remain outside this story's acceptance criteria.
+
+
+# Requirement Traceability Matrix Update — US-15
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| FR-UX-03 | Persist per-channel read cursors, calculate unread counts from saved messages, and notify authorized connected users about new messages. | Migration `009_create_channel_read_states.sql`; `UnreadService` and `UnreadRepository`; authenticated `GET /api/unread-counts` and `POST /api/channels/:channelId/read`; WebSocket `NEW_MESSAGE_NOTIFICATION` and `UNREAD_COUNT_UPDATED`; frontend channel badges and in-app notice. | `unread.integration.test.js` verifies counts, cursor advancement, own-message exclusion, authentication and membership boundaries. `webSocketGateway.integration.test.js` verifies live notification to an authorized connected member outside the channel. | Implemented for channel messages. Counts are reconstructed from persisted non-deleted messages plus each user's last-read message cursor. Live notifications require an active connection; REST counts recover state after reconnect. No separate notification inbox is stored. |
+| FR-COM-04 | Prevent unread counts, read-state updates, and live notifications from disclosing inaccessible channels. | Accessible-channel query scope; `UnreadService` permission check before cursor mutation; gateway rechecks access for each recipient before notification delivery. | Non-member history-state request returns generic 404 and does not write a cursor; WebSocket authorization integration coverage. | Unauthorized users receive no channel count entry and cannot update its read state. |
+
+## US-15 verification boundary
+
+- A read cursor represents the latest saved channel message when the mark-read request runs. Messages authored by the caller are not counted as unread.
+- Opening a channel marks it read after history loads while the browser tab is visible. A message arriving in an active visible channel also advances the cursor.
+- The notification mechanism is in-app WebSocket delivery. Offline users recover unread counts from the REST endpoint after reconnect; notifications are not retained as a separate inbox.

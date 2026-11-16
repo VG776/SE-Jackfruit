@@ -61,7 +61,8 @@ textarea { resize: vertical; }
 .icon-button:hover:not(:disabled) { background: #ffffff19; }
 .nav-list { display: grid; gap: .24rem; }
 .nav-item { display: flex; align-items: center; gap: .65rem; width: 100%; text-align: left; padding: .48rem .65rem; border: 0; background: transparent; color: #e3f4ec; }
-.nav-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.nav-badge { flex-shrink: 0; min-width: 1.45rem; padding: .08rem .35rem; border-radius: 999px; background: #f3c56b; color: #21312b; font-size: .68rem; font-weight: 800; line-height: 1.35; text-align: center; }
 .nav-item:hover { background: #ffffff12; }
 .nav-item[aria-current="true"] { color: var(--dark); background: var(--mint); font-weight: 750; }
 .nav-icon { font-size: .95rem; font-weight: 800; width: 1.1rem; text-align: center; flex-shrink: 0; }

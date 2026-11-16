@@ -47,6 +47,12 @@ class MessageService {
   constructor(messageRepository, channelService) {
     this.messageRepository = messageRepository;
     this.channelService = channelService;
+    this.messagePersistedListeners = new Set();
+  }
+
+  onMessagePersisted(listener) {
+    this.messagePersistedListeners.add(listener);
+    return () => this.messagePersistedListeners.delete(listener);
   }
 
   async sendMessage(userId, channelId, { content, clientNonce }) {
@@ -84,6 +90,7 @@ class MessageService {
     if (clientNonce) {
       dto.clientNonce = clientNonce;
     }
+    await Promise.all([...this.messagePersistedListeners].map((listener) => listener(dto, userId)));
     return dto;
   }
 
