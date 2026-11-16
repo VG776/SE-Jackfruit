@@ -246,7 +246,7 @@ sequenceDiagram
 | **POST** | `/api/direct-conversations` | Initiate 1-on-1 DM conversation | JSON: `{ recipientId }` | `200 OK`, `201 Created` | Yes (Bearer) | `FR-MSG-03` |
 | **GET** | `/api/direct-conversations/:id/messages` | Retrieve DM message history | Query: `?before=<uuid>&limit=50` | `200 OK`, `403` | Yes (Participant) | `FR-MSG-03` |
 | **GET** | `/api/search` | Permission-scoped full-text search| Query: `?q=&channelId=&page=&limit=` | `200 OK`, `400`, `401` | Yes (Bearer) | `FR-UX-02, SRS 6.1` |
-| **POST** | `/api/communities/:id/members/:userId/moderation` | Restrict or kick member | JSON: `{ action: "KICK"|"BAN", reason }` | `200 OK`, `403`, `404` | Yes (Mod/Admin)| `FR-MOD-02, FR-MOD-03` |
+| **POST** | `/api/communities/:communityId/members/:userId/moderation` | Remove or ban a current community member | JSON: `{ action: "KICK"|"BAN", reason }`; reason is required and limited to 500 characters | `200 OK`, `400`, `401`, `403`, `404` | Yes (Moderator/Admin, role scoped) | `FR-MOD-02` |
 | **GET** | `/api/communities/:id/audit-logs` | Retrieve moderation audit trail | Query: `?page=1&limit=50` | `200 OK`, `403` | Yes (Mod/Admin)| `FR-MOD-03` |
 
 ---

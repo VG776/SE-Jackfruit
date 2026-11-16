@@ -44,11 +44,25 @@ const updateMemberRoleSchema = z
   })
   .strict('Unexpected fields are not allowed');
 
+const moderateMemberSchema = z
+  .object({
+    action: z.enum(['KICK', 'BAN'], {
+      error: 'Action must be KICK or BAN',
+    }),
+    reason: z
+      .string({ error: 'Reason is required' })
+      .trim()
+      .min(1, 'Reason must not be empty')
+      .max(500, 'Reason must not exceed 500 characters'),
+  })
+  .strict('Unexpected fields are not allowed');
+
 module.exports = {
   communityParamsSchema,
   memberParamsSchema,
   inviteCodeParamsSchema,
   createInviteSchema,
   updateMemberRoleSchema,
+  moderateMemberSchema,
 };
 

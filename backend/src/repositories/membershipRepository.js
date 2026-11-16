@@ -33,6 +33,17 @@ class MembershipRepository {
     return Boolean(role);
   }
 
+  async isBanned(userId, communityId) {
+    const result = await this.pool.query(
+      `SELECT 1
+         FROM community_bans
+        WHERE community_id = $1
+          AND user_id = $2`,
+      [communityId, userId],
+    );
+    return result.rowCount > 0;
+  }
+
   async listMembers(communityId) {
     // 1. Fetch community owner
     const ownerRes = await this.pool.query(
@@ -103,6 +114,38 @@ class MembershipRepository {
       [communityId, userId],
     );
     return result.rows[0] || null;
+  }
+
+  async banMember({ communityId, userId, bannedBy, reason }) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const removed = await client.query(
+        `DELETE FROM community_members
+          WHERE community_id = $1
+            AND user_id = $2
+          RETURNING id, community_id, user_id, role, joined_at`,
+        [communityId, userId],
+      );
+
+      if (!removed.rows[0]) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+
+      await client.query(
+        `INSERT INTO community_bans (community_id, user_id, banned_by, reason)
+         VALUES ($1, $2, $3, $4)`,
+        [communityId, userId, bannedBy, reason],
+      );
+      await client.query('COMMIT');
+      return removed.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async createInvite({ id, communityId, inviterId, code, maxUses, expiresAt }) {

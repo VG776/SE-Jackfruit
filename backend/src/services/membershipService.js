@@ -57,6 +57,14 @@ function cannotModifyOwnerError() {
   });
 }
 
+function memberBannedError() {
+  return new AppError({
+    status: 403,
+    code: 'MEMBER_BANNED',
+    detail: 'You are not allowed to join this community.',
+  });
+}
+
 function toMemberDto(row) {
   return {
     id: row.id,
@@ -165,6 +173,10 @@ class MembershipService {
       throw alreadyMemberError();
     }
 
+    if (await this.membershipRepository.isBanned(userId, invite.community_id)) {
+      throw memberBannedError();
+    }
+
     // Increment invite usage
     await this.membershipRepository.incrementInviteUses(invite.id);
 
@@ -217,6 +229,59 @@ class MembershipService {
 
     return {
       message: 'Member successfully removed.',
+    };
+  }
+
+  async moderateMember(requesterId, communityId, targetUserId, { action, reason }) {
+    const community = await this.membershipRepository.findCommunityById(communityId);
+    if (!community) {
+      throw communityNotFoundError();
+    }
+
+    const requesterRole = await this.membershipRepository.getRole(requesterId, communityId);
+    if (!requesterRole) {
+      throw communityNotFoundError();
+    }
+    if (requesterRole !== 'admin' && requesterRole !== 'moderator') {
+      throw insufficientPermissionsError();
+    }
+
+    if (community.owner_id === targetUserId) {
+      throw cannotModifyOwnerError();
+    }
+
+    const targetRole = await this.membershipRepository.getRole(targetUserId, communityId);
+    if (!targetRole) {
+      throw memberNotFoundError();
+    }
+
+    const requesterIsOwner = community.owner_id === requesterId;
+    if (
+      (requesterRole === 'moderator' && targetRole !== 'member') ||
+      (requesterRole === 'admin' && targetRole === 'admin' && !requesterIsOwner)
+    ) {
+      throw insufficientPermissionsError();
+    }
+
+    const result = action === 'BAN'
+      ? await this.membershipRepository.banMember({
+        communityId,
+        userId: targetUserId,
+        bannedBy: requesterId,
+        reason,
+      })
+      : await this.membershipRepository.removeMember(communityId, targetUserId);
+
+    if (!result) {
+      throw memberNotFoundError();
+    }
+
+    return {
+      communityId,
+      userId: targetUserId,
+      action,
+      state: action === 'BAN' ? 'BANNED' : 'REMOVED',
+      reason,
     };
   }
 }

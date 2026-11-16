@@ -18,6 +18,7 @@ const migrations = [
   path.resolve(__dirname, '../../database/migrations/005_index_message_history.sql'),
   path.resolve(__dirname, '../../database/migrations/006_create_community_invites.sql'),
   path.resolve(__dirname, '../../database/migrations/007_add_message_soft_delete.sql'),
+  path.resolve(__dirname, '../../database/migrations/010_create_community_bans.sql'),
 ];
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
@@ -465,6 +466,137 @@ describe('US-05: Manage invitations and membership (FR-COM-02, FR-COM-04)', () =
 
       expect(response.status).toBe(404);
       expect(response.body.code).toBe('MEMBER_NOT_FOUND');
+    });
+  });
+
+  describe('POST /api/communities/:communityId/members/:userId/moderation (Kick or ban)', () => {
+    it('allows a moderator to kick an ordinary member and persists removal', async () => {
+      await pool.query(
+        'UPDATE community_members SET role = $3 WHERE community_id = $1 AND user_id = $2',
+        [COMMUNITY_ID, ADMIN_ID, 'moderator'],
+      );
+
+      const response = await request(app)
+        .post(`/api/communities/${COMMUNITY_ID}/members/${MEMBER_ID}/moderation`)
+        .set('Authorization', 'Bearer admin_token')
+        .send({ action: 'KICK', reason: 'Repeated disruption' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toMatchObject({
+        communityId: COMMUNITY_ID,
+        userId: MEMBER_ID,
+        action: 'KICK',
+        state: 'REMOVED',
+      });
+      const member = await pool.query(
+        'SELECT 1 FROM community_members WHERE community_id = $1 AND user_id = $2',
+        [COMMUNITY_ID, MEMBER_ID],
+      );
+      expect(member.rows).toHaveLength(0);
+    });
+
+    it('persists a ban, removes current access, and blocks joining with an invite', async () => {
+      const invite = await request(app)
+        .post(`/api/communities/${COMMUNITY_ID}/invites`)
+        .set('Authorization', 'Bearer owner_token')
+        .send({ maxUses: 5 });
+
+      const response = await request(app)
+        .post(`/api/communities/${COMMUNITY_ID}/members/${MEMBER_ID}/moderation`)
+        .set('Authorization', 'Bearer admin_token')
+        .send({ action: 'BAN', reason: 'Repeated abuse' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.state).toBe('BANNED');
+      const ban = await pool.query(
+        `SELECT banned_by, reason FROM community_bans
+          WHERE community_id = $1 AND user_id = $2`,
+        [COMMUNITY_ID, MEMBER_ID],
+      );
+      expect(ban.rows[0]).toMatchObject({ banned_by: ADMIN_ID, reason: 'Repeated abuse' });
+      const member = await pool.query(
+        'SELECT 1 FROM community_members WHERE community_id = $1 AND user_id = $2',
+        [COMMUNITY_ID, MEMBER_ID],
+      );
+      expect(member.rows).toHaveLength(0);
+
+      const join = await request(app)
+        .post(`/api/invites/${invite.body.data.code}/join`)
+        .set('Authorization', 'Bearer member_token');
+      expect(join.status).toBe(403);
+      expect(join.body.code).toBe('MEMBER_BANNED');
+      const inviteState = await pool.query(
+        'SELECT uses FROM community_invites WHERE code = $1',
+        [invite.body.data.code],
+      );
+      expect(inviteState.rows[0].uses).toBe(0);
+    });
+
+    it('rejects ordinary members and leaves membership unchanged', async () => {
+      const response = await request(app)
+        .post(`/api/communities/${COMMUNITY_ID}/members/${ADMIN_ID}/moderation`)
+        .set('Authorization', 'Bearer member_token')
+        .send({ action: 'BAN', reason: 'Attempted escalation' });
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe('INSUFFICIENT_PERMISSIONS');
+      const member = await pool.query(
+        'SELECT 1 FROM community_members WHERE community_id = $1 AND user_id = $2',
+        [COMMUNITY_ID, ADMIN_ID],
+      );
+      expect(member.rows).toHaveLength(1);
+    });
+
+    it('prevents moderators from targeting admins', async () => {
+      await pool.query(
+        'UPDATE community_members SET role = $3 WHERE community_id = $1 AND user_id = $2',
+        [COMMUNITY_ID, MEMBER_ID, 'moderator'],
+      );
+
+      const response = await request(app)
+        .post(`/api/communities/${COMMUNITY_ID}/members/${ADMIN_ID}/moderation`)
+        .set('Authorization', 'Bearer member_token')
+        .send({ action: 'KICK', reason: 'Role hierarchy check' });
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe('INSUFFICIENT_PERMISSIONS');
+      const member = await pool.query(
+        'SELECT role FROM community_members WHERE community_id = $1 AND user_id = $2',
+        [COMMUNITY_ID, ADMIN_ID],
+      );
+      expect(member.rows[0].role).toBe('admin');
+    });
+
+    it('rejects invalid actions and targets without changing state', async () => {
+      const invalidAction = await request(app)
+        .post(`/api/communities/${COMMUNITY_ID}/members/${MEMBER_ID}/moderation`)
+        .set('Authorization', 'Bearer admin_token')
+        .send({ action: 'MUTE', reason: 'Invalid operation' });
+      const missingTarget = await request(app)
+        .post(`/api/communities/${COMMUNITY_ID}/members/${OUTSIDER_ID}/moderation`)
+        .set('Authorization', 'Bearer admin_token')
+        .send({ action: 'BAN', reason: 'Target not in community' });
+
+      expect(invalidAction.status).toBe(400);
+      expect(missingTarget.status).toBe(404);
+      expect(missingTarget.body.code).toBe('MEMBER_NOT_FOUND');
+      const member = await pool.query(
+        'SELECT 1 FROM community_members WHERE community_id = $1 AND user_id = $2',
+        [COMMUNITY_ID, MEMBER_ID],
+      );
+      const bans = await pool.query('SELECT 1 FROM community_bans');
+      expect(member.rows).toHaveLength(1);
+      expect(bans.rows).toHaveLength(0);
+    });
+
+    it('prevents moderating the community owner', async () => {
+      const response = await request(app)
+        .post(`/api/communities/${COMMUNITY_ID}/members/${OWNER_ID}/moderation`)
+        .set('Authorization', 'Bearer admin_token')
+        .send({ action: 'KICK', reason: 'Owner protection' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe('CANNOT_MODIFY_OWNER');
     });
   });
 });
