@@ -63,6 +63,20 @@ function createMembershipController(membershipService) {
         next(error);
       }
     },
+
+    async moderateMember(request, response, next) {
+      try {
+        const result = await membershipService.moderateMember(
+          request.authenticatedUserId,
+          request.validatedParams.communityId,
+          request.validatedParams.userId,
+          request.validatedBody,
+        );
+        response.status(200).json({ status: 'success', data: result });
+      } catch (error) {
+        next(error);
+      }
+    },
   };
 }
 
