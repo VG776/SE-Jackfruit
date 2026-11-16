@@ -149,3 +149,16 @@ This incremental RTM records the implementation and verification added for US-10
 - A read cursor represents the latest saved channel message when the mark-read request runs. Messages authored by the caller are not counted as unread.
 - Opening a channel marks it read after history loads while the browser tab is visible. A message arriving in an active visible channel also advances the cursor.
 - The notification mechanism is in-app WebSocket delivery. Offline users recover unread counts from the REST endpoint after reconnect; notifications are not retained as a separate inbox.
+
+
+# Requirement Traceability Matrix Update — US-16
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| FR-MOD-01 | A moderator or admin can remove a message only in a community where they hold permission; unauthorized attempts are rejected and the action is audited. | `POST /api/channels/:channelId/messages/:messageId/moderation` (`{ action: "REMOVE", reason? }`); `ModerationService`, `ModerationRepository`, `moderationSchemas.js`. The existing `DELETE .../messages/:messageId` now routes a moderator removing another user's message through the same audited path. | `moderation.integration.test.js`, `moderationRepository.test.js`; `TC-F24`, `SEC-11`. | Implemented. Members get `403`, non-members and unknown or already-removed messages get `404`, unauthenticated requests get `401`. Removal is a soft delete, so removed messages leave channel history. |
+| FR-MOD-03 | Record actor, action, affected resource and timestamp for moderation events, without secrets. | Migration `010_create_audit_logs.sql`; the message removal and the `audit_logs` insert run in one transaction. | `moderation.integration.test.js` (audit row contents, no secrets); `moderationRepository.test.js` (commit and rollback); `TC-F26`. | Audit table and write path exist for message removal. Audit retrieval (`GET /api/communities/:id/audit-logs`) and other event types belong to US-18. |
+
+## US-16 boundary
+
+- Only message removal is covered; member moderation (kick or ban) is US-17.
+- The rollback guarantee is verified against a mocked client, because `pg-mem` does not roll back transactions.

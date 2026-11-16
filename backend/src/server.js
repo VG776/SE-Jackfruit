@@ -8,6 +8,8 @@ const { MessageRepository } = require('./repositories/messageRepository');
 const { MembershipRepository } = require('./repositories/membershipRepository');
 const DirectMessageRepository = require('./repositories/directMessageRepository');
 const { ReactionRepository } = require('./repositories/reactionRepository');
+const { ModerationRepository } = require('./repositories/moderationRepository');
+const { ModerationService } = require('./services/moderationService');
 const { SearchRepository } = require('./repositories/searchRepository');
 const { UnreadRepository } = require('./repositories/unreadRepository');
 const { ReactionService } = require('./services/reactionService');
@@ -29,7 +31,12 @@ function createServer(pool, authOptions = {}) {
     new ChannelPermissionRepository(pool),
   );
   const messageRepository = new MessageRepository(pool);
-  const messageService = new MessageService(messageRepository, channelService);
+  const moderationService = new ModerationService(
+    new ModerationRepository(pool),
+    messageRepository,
+    channelService,
+  );
+  const messageService = new MessageService(messageRepository, channelService, moderationService);
   const membershipService = new MembershipService(new MembershipRepository(pool));
   const directMessageRepository = new DirectMessageRepository(pool);
   const directMessageService = new DirectMessageService(directMessageRepository, authService.userRepository);
@@ -51,6 +58,7 @@ function createServer(pool, authOptions = {}) {
     directMessageService,
     searchService,
     unreadService,
+    moderationService,
   });
   const server = require('node:http').createServer(app);
   const webSocketServer = createWebSocketGateway(server, {
@@ -71,6 +79,7 @@ function createServer(pool, authOptions = {}) {
     reactionService,
     searchService,
     unreadService,
+    moderationService,
   };
 }
 
