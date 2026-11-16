@@ -521,7 +521,7 @@ NexusChat allows users to create communities and organise conversations into sep
 
 **FR-MOD-01 \[High\]:** A moderator or admin shall be able to remove a message only in a community where they have the required permission. The system shall reject unauthorized attempts and shall record the moderation action in the audit trail.
 
-**FR-MOD-02 \[High\]:** A moderator or admin shall be able to restrict or remove a member only when their role permits that action. The system shall validate the target and permission before applying the change.
+**FR-MOD-02 \[High\]:** An authorized community moderator or admin shall be able to remove (KICK) or ban (BAN) a current member only when their role permits that action. Moderators may act on ordinary members; admins may act on ordinary members and moderators; only the community owner may act on another admin. The community owner cannot be removed or banned. A BAN shall persist a community-specific ban and remove the current membership; a banned user shall not be able to rejoin through an invite. A KICK shall remove the current membership without adding a ban. The system shall validate the action, target, reason, and permission before applying a change, and shall leave membership unchanged for invalid or unauthorized requests.
 
 **FR-MOD-03 \[High\]:** The system shall record security-relevant moderation events, including the actor, action, affected resource, and timestamp. Audit records shall not contain passwords, authentication tokens, or other secrets.
 

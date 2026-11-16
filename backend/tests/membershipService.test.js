@@ -14,6 +14,7 @@ describe('MembershipService', () => {
     membershipRepository = {
       findCommunityById: jest.fn(),
       getRole: jest.fn(),
+      isBanned: jest.fn().mockResolvedValue(false),
       listMembers: jest.fn(),
       createInvite: jest.fn(),
       findInviteByCode: jest.fn(),

@@ -8,6 +8,7 @@ const {
   inviteCodeParamsSchema,
   createInviteSchema,
   updateMemberRoleSchema,
+  moderateMemberSchema,
 } = require('../validation/membershipSchemas');
 
 function createMembershipRouter(membershipService, authenticate) {
@@ -74,6 +75,16 @@ function createMembershipRouter(membershipService, authenticate) {
     requireAuthenticatedUser,
     validateMemberParams,
     controller.removeMember,
+  );
+
+  // POST /api/communities/:communityId/members/:userId/moderation - Kick or ban a member
+  router.post(
+    '/communities/:communityId/members/:userId/moderation',
+    authenticate,
+    requireAuthenticatedUser,
+    validateMemberParams,
+    validate(moderateMemberSchema),
+    controller.moderateMember,
   );
 
   return router;

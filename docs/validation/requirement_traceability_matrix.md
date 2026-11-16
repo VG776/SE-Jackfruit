@@ -135,3 +135,17 @@ This incremental RTM records the implementation and verification added for US-10
 
 - Reactions apply to channel messages only; direct-message reactions are not part of this story.
 - Reaction counts are returned by the add and list endpoints. Reactions are not yet embedded in message history responses or pushed as WebSocket events, so clients refresh through the list endpoint.
+
+
+# Requirement Traceability Matrix Update — US-17
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| FR-MOD-02 | Permit KICK or BAN only when the actor's role allows it; validate target and action; persist and enforce resulting membership or ban state. | `POST /api/communities/:communityId/members/:userId/moderation`; `MembershipService.moderateMember`; `MembershipRepository.banMember`; migration `010_create_community_bans.sql`; invite join checks persisted bans. Existing channel access and WebSocket fan-out checks enforce removed membership. | `membership.integration.test.js` covers moderator KICK, admin BAN, ban persistence and blocked rejoin, ordinary-member denial, moderator role hierarchy, owner protection, missing target and invalid action. | Implemented. KICK removes membership; BAN atomically removes membership and stores the reason. The existing admin-only DELETE endpoint remains available for compatibility. |
+| FR-COM-04 | Enforce current server-side membership and role permissions for moderation and protected operations. | Authenticated route validation plus live membership checks in `MembershipService`, `ChannelService`, and WebSocket delivery. | `membership.integration.test.js`; existing message and WebSocket authorization suites. | Unauthorized actions leave membership unchanged; banned users cannot rejoin through community invites. |
+
+## US-17 verification boundary
+
+- Moderators may act on ordinary members. Admins may act on ordinary members and moderators. Only the owner may act on another admin; no actor may remove or ban the owner.
+- BAN is community-specific and blocks rejoining through an invite. KICK removes current membership but does not prevent a later invite-based join.
+- This change does not add a separate audit-log viewer or an unban endpoint; those remain outside this story's acceptance criteria.
