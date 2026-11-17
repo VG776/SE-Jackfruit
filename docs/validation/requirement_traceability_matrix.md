@@ -176,3 +176,17 @@ This incremental RTM records the implementation and verification added for US-10
 - Moderators may act on ordinary members. Admins may act on ordinary members and moderators. Only the owner may act on another admin; no actor may remove or ban the owner.
 - BAN is community-specific and blocks rejoining through an invite. KICK removes current membership but does not prevent a later invite-based join.
 - This change does not add a separate audit-log viewer or an unban endpoint; those remain outside this story's acceptance criteria.
+
+
+# Requirement Traceability Matrix Update — US-18
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| FR-MOD-03 | Record actor, action, affected resource and timestamp for moderation events, without secrets; provide community-scoped audit trail retrieval. | `GET /api/communities/:communityId/audit-logs?page&limit`; `AuditRepository`, `AuditService`, `auditRoutes.js`. Writes hooked in `MembershipService.moderateMember` (`MEMBER_BANNED`, `MEMBER_REMOVED`) and `ModerationRepository.removeMessageWithAudit` (`MESSAGE_REMOVED`). Sensitive fields (`password`, `token`, `secret`, `authorization`, `api_key`) are stripped via `sanitizeDetails`. | `audit.integration.test.js`, `moderation.integration.test.js`; `TC-F26`, `SEC-10`, `SEC-12`. | Implemented. Only community admins and moderators may view audit logs (`200 OK`). Non-members receive `404`, ordinary members receive `403`, and unauthenticated requests receive `401`. Results are ordered newest-first with pagination support (`page`, `limit`). |
+
+## US-18 verification boundary
+
+- Audit log retrieval is scoped strictly to the caller's community.
+- Member moderation (`MEMBER_BANNED`, `MEMBER_REMOVED`) and message moderation (`MESSAGE_REMOVED`) write immutable audit entries.
+- Secrets matching `SECRET_KEYS` pattern in detail payloads are purged before persistence.
+- Pagination limits are validated (page >= 1, limit 1-100, default 50).

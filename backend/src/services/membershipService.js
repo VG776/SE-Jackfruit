@@ -89,8 +89,9 @@ function toInviteDto(row) {
 }
 
 class MembershipService {
-  constructor(membershipRepository) {
+  constructor(membershipRepository, auditService = null) {
     this.membershipRepository = membershipRepository;
+    this.auditService = auditService;
   }
 
   async assertAdmin(userId, communityId) {
@@ -227,6 +228,17 @@ class MembershipService {
       throw memberNotFoundError();
     }
 
+    if (this.auditService) {
+      await this.auditService.record({
+        communityId,
+        actorId: requesterId,
+        action: 'MEMBER_REMOVED',
+        targetType: 'user',
+        targetId: targetUserId,
+        details: { reason: null },
+      });
+    }
+
     return {
       message: 'Member successfully removed.',
     };
@@ -274,6 +286,17 @@ class MembershipService {
 
     if (!result) {
       throw memberNotFoundError();
+    }
+
+    if (this.auditService) {
+      await this.auditService.record({
+        communityId,
+        actorId: requesterId,
+        action: action === 'BAN' ? 'MEMBER_BANNED' : 'MEMBER_REMOVED',
+        targetType: 'user',
+        targetId: targetUserId,
+        details: { reason: reason || null },
+      });
     }
 
     return {
