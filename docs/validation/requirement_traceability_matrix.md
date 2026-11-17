@@ -6,7 +6,7 @@ This incremental RTM records the implementation and verification added for US-14
 |---|---|---|---|---|
 | FR-UX-02 | Search messages only within communities and conversations the requesting user is authorized to access, with no leakage of inaccessible text or metadata. | `GET /api/search`, `SearchService`, `SearchRepository`, `searchSchemas.js`. | `search.integration.test.js`, `searchService.test.js`, `TC-F21`, `TC-F22`. | Implemented for accessible channel messages. Results include snippet with highlighted matching terms (`<b>...</b>`), rank, sender, channel, and community metadata. Soft-deleted messages and messages from communities the user has not joined are strictly excluded. |
 | FR-COM-04 | Enforce server-side permissions for search queries. | `SearchRepository.searchMessages` SQL join with `communities` and `community_members`. | `search.integration.test.js`, `TC-F22`. | Unauthenticated requests are rejected with 401. Users without membership in the message's community receive zero results (totalMatches: 0) and cannot observe private conversation contents or metadata. |
-| SRS §6.1 | Search response time target of no more than 2 seconds under the defined evaluation dataset. | In-memory and PostgreSQL indexing, pagination (`page`, `limit`), `backend/scripts/benchmark-search.js`. | `search.integration.test.js` (TC-NF03), `npm run benchmark:search`. | Verified: Automated test suite validates sub-second response times ($\le 2$ seconds SLA) over the documented evaluation dataset. |
+| SRS §6.1 | Search response time target of no more than 2 seconds under the defined evaluation dataset. | Permission-scoped query and `backend/scripts/benchmark-api.js`, `backend/scripts/benchmark-search.js`. | `search.integration.test.js` verifies correctness; measured performance uses TC-NF03 and the benchmark report. | Performance was not measured in this change environment; integration test timing is not treated as deployment performance. See `docs/testing/performance_test_report.md`. |
 
 ## US-14 Enforced Rules
 
@@ -14,6 +14,15 @@ This incremental RTM records the implementation and verification added for US-14
 - **Authorization Scoping:** Search results are strictly limited to channels within communities owned by the caller or where the caller is an active member.
 - **Content Highlighting:** Matched search terms are highlighted in the generated snippet using `<b>` tags while preserving original text case.
 - **Exclusion of Soft-Deleted Records:** Messages with `deleted_at IS NOT NULL` are excluded from search results unconditionally.
+
+
+# Requirement Traceability Matrix Update — NFR-01
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| SRS §6.1 — WebSocket messaging | Measure message acknowledgement latency at p95 ≤ 500 ms under a documented load. | Repeatable WebSocket benchmark with configurable concurrency, measured/warm-up sends, acknowledgement timeout, and JSON p50/p95 results. | TC-NF01; `backend/scripts/benchmark-messaging.js`; report: `docs/testing/performance_test_report.md`. | Procedure implemented. Measurement not run because no authenticated test WebSocket endpoint/token was available; target remains unevaluated. |
+| SRS §6.1 — Core API | Measure core authenticated API operations at p95 ≤ 2 seconds under normal conditions. | Authenticated API benchmark for community list, channel list, channel history, and search with configurable concurrency, warm-ups, iterations, and failure reporting. | TC-NF02; `backend/scripts/benchmark-api.js`; report: `docs/testing/performance_test_report.md`. | Procedure implemented. Measurement not run because no authenticated test API endpoint/token was available; target remains unevaluated. |
+| SRS §6.1 — Search | Measure search at p95 ≤ 2 seconds on the documented evaluation dataset. | Idempotent deterministic 10,000-message seeder; API-level search load and direct PostgreSQL search benchmark across five defined phrases. | TC-NF03; `seed-performance-dataset.js`, `benchmark-api.js`, `benchmark-search.js`; report: `docs/testing/performance_test_report.md`. | Dataset and procedure implemented. Measurement not run because the configured PostgreSQL host was unreachable; target remains unevaluated. |
 
 # Requirement Traceability Matrix Update — US-05
 
