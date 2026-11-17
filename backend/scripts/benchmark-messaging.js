@@ -5,11 +5,16 @@ const token = process.env.WS_TOKEN;
 const channelId = process.env.CHANNEL_ID;
 const clients = Number(process.env.CLIENTS || 10);
 const messagesPerClient = Number(process.env.MESSAGES_PER_CLIENT || 20);
+const warmupMessages = Number(process.env.WARMUP_MESSAGES || 2);
+const ackTimeoutMs = Number(process.env.ACK_TIMEOUT_MS || 10000);
+const testEnvironment = process.env.TEST_ENVIRONMENT;
 const protocol = 'nexuschat.v1';
 
-if (!url || !token || !channelId || !Number.isInteger(clients) || clients < 1 ||
-    !Number.isInteger(messagesPerClient) || messagesPerClient < 1) {
-  throw new Error('Set WS_URL, WS_TOKEN, CHANNEL_ID and positive CLIENTS/MESSAGES_PER_CLIENT values.');
+if (!url || !token || !channelId || !testEnvironment || !Number.isInteger(clients) || clients < 1 ||
+    !Number.isInteger(messagesPerClient) || messagesPerClient < 1 ||
+    !Number.isInteger(warmupMessages) || warmupMessages < 0 ||
+    !Number.isInteger(ackTimeoutMs) || ackTimeoutMs < 1) {
+  throw new Error('Set WS_URL, WS_TOKEN, CHANNEL_ID, positive CLIENTS/MESSAGES_PER_CLIENT, and valid WARMUP_MESSAGES/ACK_TIMEOUT_MS values.');
 }
 
 function openClient() {
@@ -22,16 +27,24 @@ function openClient() {
 
 function waitFor(socket, predicate) {
   return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error(`Timed out waiting for acknowledgement after ${ackTimeoutMs} ms.`));
+    }, ackTimeoutMs);
+    const cleanup = () => {
+      clearTimeout(timeout);
+      socket.off('message', onMessage);
+      socket.off('error', onError);
+    };
     const onMessage = (raw) => {
       const event = JSON.parse(raw.toString());
       if (predicate(event)) {
-        socket.off('message', onMessage);
-        socket.off('error', onError);
+        cleanup();
         resolve(event);
       }
     };
     const onError = (error) => {
-      socket.off('message', onMessage);
+      cleanup();
       reject(error);
     };
     socket.on('message', onMessage);
@@ -50,7 +63,7 @@ async function runClient(clientNumber) {
   await joined;
   const latencies = [];
 
-  for (let index = 0; index < messagesPerClient; index += 1) {
+  for (let index = -warmupMessages; index < messagesPerClient; index += 1) {
     const clientNonce = `bench-${clientNumber}-${index}-${Date.now()}`;
     const started = process.hrtime.bigint();
     const ack = waitFor(socket, (event) => event.type === 'ACK' &&
@@ -59,8 +72,13 @@ async function runClient(clientNumber) {
       type: 'SEND_MESSAGE',
       payload: { channelId, content: `US-09 benchmark ${clientNonce}`, clientNonce },
     }));
-    await ack;
-    latencies.push(Number(process.hrtime.bigint() - started) / 1e6);
+    const response = await ack;
+    if (index >= 0) {
+      if (response.payload.status !== 'DELIVERED') {
+        throw new Error(`Unexpected message acknowledgement status: ${response.payload.status}`);
+      }
+      latencies.push(Number(process.hrtime.bigint() - started) / 1e6);
+    }
   }
   socket.close();
   return latencies;
@@ -71,6 +89,15 @@ async function main() {
   const results = await Promise.all(Array.from({ length: clients }, (_, index) => runClient(index)));
   const latencies = results.flat().sort((a, b) => a - b);
   console.log(JSON.stringify({
+    run: {
+      startedAt: new Date().toISOString(),
+      environment: testEnvironment,
+      endpointOrigin: new URL(url).origin,
+      node: process.version,
+      platform: `${process.platform}-${process.arch}`,
+      ackTimeoutMs,
+      warmupMessagesPerClient: warmupMessages,
+    },
     clients,
     messagesPerClient,
     totalMessages: latencies.length,

@@ -14,7 +14,9 @@
     "migrate": "node src/db/migrate.js",
     "test": "jest --runInBand",
     "benchmark:messaging": "node scripts/benchmark-messaging.js",
+    "benchmark:api": "node scripts/benchmark-api.js",
     "benchmark:search": "node scripts/benchmark-search.js",
+    "benchmark:seed": "node scripts/seed-performance-dataset.js",
     "lint": "eslint src tests"
   },
   "dependencies": {
