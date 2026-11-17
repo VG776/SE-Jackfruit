@@ -228,6 +228,17 @@ class MembershipService {
       throw memberNotFoundError();
     }
 
+    if (this.auditService) {
+      await this.auditService.record({
+        communityId,
+        actorId: requesterId,
+        action: 'MEMBER_REMOVED',
+        targetType: 'user',
+        targetId: targetUserId,
+        details: { reason: null },
+      });
+    }
+
     return {
       message: 'Member successfully removed.',
     };

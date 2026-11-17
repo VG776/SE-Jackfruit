@@ -147,4 +147,22 @@ describe('US-18: Record moderation audit events (FR-MOD-03, FR-MOD-01)', () => {
     });
     expect((await list(u.owner.token)).body.data.logs).toHaveLength(0);
   });
+
+  test('records MEMBER_REMOVED when kicking a member or removing via admin delete', async () => {
+    const kick = await request(app)
+      .post(`/api/communities/${communityId}/members/${u.member.id}/moderation`)
+      .set(bearer(u.mod.token))
+      .send({ action: 'KICK', reason: 'violating rules' });
+    expect(kick.status).toBe(200);
+
+    const res = await list(u.owner.token);
+    expect(res.status).toBe(200);
+    expect(res.body.data.logs[0]).toMatchObject({
+      actor: { id: u.mod.id, username: 'user_mod' },
+      action: 'MEMBER_REMOVED',
+      targetType: 'user',
+      targetId: u.member.id,
+      details: { reason: 'violating rules' },
+    });
+  });
 });
