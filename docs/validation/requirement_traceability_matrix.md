@@ -199,3 +199,18 @@ This incremental RTM records the implementation and verification added for US-10
 - Member moderation (`MEMBER_BANNED`, `MEMBER_REMOVED`) and message moderation (`MESSAGE_REMOVED`) write immutable audit entries.
 - Secrets matching `SECRET_KEYS` pattern in detail payloads are purged before persistence.
 - Pagination limits are validated (page >= 1, limit 1-100, default 50).
+
+
+# Requirement Traceability Matrix Update — NFR-03
+
+| Requirement ID | Requirement | Implementation | Verification | Status / boundary |
+|---|---|---|---|---|
+| SRS §6.4 / NFR-03 | Verify that NexusChat handles connection interruptions and recovery without losing persisted messages or leaving application state inconsistent. | WebSocket gateway reconnect handling, message persistence in `messages` table, channel history retrieval `GET /api/channels/:id/messages`, real-time presence transition broadcasting (`online` $\leftrightarrow$ `offline`), and client Map-based timeline store deduplication. | `reliability.validation.test.js`, `reliability_test_report.md`; `TC-NF04`, `TC-NF05`. | Verified. Client reconnects after socket drop; messages sent while offline are retrieved without corruption; presence state updates immediately upon disconnect/reconnect; concurrent submissions are persisted safely with deduplicated views. |
+| FR-MSG-02 | Message persistence and retrieval after reconnection. | PostgreSQL `messages` table, parameterized prepared queries, and cursor-paginated history endpoint. | `reliability.validation.test.js` (offline send recovery); `TC-NF04`. | Verified. Messages dispatched while client is disconnected are preserved and retrieved chronologically. |
+| FR-MSG-05 | Presence handling during connection loss. | WebSocket connection and disconnection lifecycle events in `webSocketGateway.js` broadcasting `PRESENCE_UPDATE`. | `reliability.validation.test.js` (online $\to$ offline $\to$ online); `FR-MSG-05`. | Verified. Connection drops trigger offline presence broadcast; reconnection restores online presence state. |
+
+## NFR-03 verification boundary
+
+- Verified with 8 automated end-to-end integration tests covering temporary disconnection, reconnection, offline message retrieval, presence recovery, concurrent submission, timeline deduplication, and failure state handling.
+- Historical message catch-up after reconnect uses standard REST history endpoint.
+- Full verification matrix and operational details are documented in `docs/testing/reliability_test_report.md`.
